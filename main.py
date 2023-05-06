@@ -1,3 +1,14 @@
+'''
+AiCore Multinational Retail Data Centralisation Project
+Extract and clean user data.
+
+Connect to PostgreSQL AWS database; read the legacy_users
+table into a Pandas dataframe; write to a new table (dim_users)
+on local PostgreSQL database.
+
+Author: Kristina Gorkovskaya
+Date: 2023-05-06
+'''
 
 from database_utils import DatabaseConnector
 from data_extraction import DataExtractor

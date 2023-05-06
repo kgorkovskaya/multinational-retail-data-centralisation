@@ -1,41 +1,58 @@
-from sqlalchemy import create_engine, inspect, text
+'''
+AiCore Multinational Retail Data Centralisation Project
+Database utilities
+
+Author: Kristina Gorkovskaya
+Date: 2023-05-06
+'''
+
+from sqlalchemy import create_engine, inspect
 import yaml
 
 
 class DatabaseConnector:
+    '''This class connects to a database using SQLAlchemy.
 
-    def __init__(self, file_name="db_creds.yaml"):
+    Attributes:
+        engine (Engine): SQLAlchemy Engine, connected to DB
+        file_name (str): YAML file containing connection details and
+            login credentials
+    '''
+
+    def __init__(self, file_name='db_creds.yaml'):
+        '''See help(DatabaseConnector) for accurate signature.'''
+
         self.engine = None
         self.file_name = file_name
 
     def read_db_creds(self):
-        '''Reads database credentials from YAML file.
+        '''Read database credentials from YAML file.
 
         Returns: 
             dict
         '''
 
+        print(f'Loading credentials from file {self.file_name}')
         try:
-            with open(self.file_name, "r") as file:
+            with open(self.file_name, 'r') as file:
                 return yaml.safe_load(file)
         except Exception as err:
-            print("Failed to read database credentials")
-            print(f"{err.__class__.__name__}: {err}")
+            print('Failed to read database credentials')
+            print(f'{err.__class__.__name__}: {err}')
             return dict()
 
     def init_db_engine(self, db_type='postgresql', db_api='psycopg2'):
-        '''Initializes a SQLAlchemy database engine.
+        '''Initialize a SQLAlchemy Engine object.
 
-        Args: 
-            db_type: string
-            db_api: string
+        Arguments: 
+            db_type (str): database type
+            db_api (str): database API
 
-        Returns:
+        Returns: 
             SQLAlchemy database engine or None.
         '''
 
         try:
-            print('Connecting to database')
             db_creds = self.read_db_creds()
             user = db_creds['RDS_USER']
             password = db_creds['RDS_PASSWORD']
@@ -43,47 +60,55 @@ class DatabaseConnector:
             port = db_creds['RDS_PORT']
             database = db_creds['RDS_DATABASE']
 
-            cxn_string = f"{db_type}+{db_api}://{user}:{password}@{host}:{port}/{database}"
+            print(f'Connecting to database {database}')
+            cxn_string = f'{db_type}+{db_api}://{user}:{password}@{host}:{port}/{database}'
             self.engine = create_engine(cxn_string)
             return self.engine
 
         except Exception as err:
-            print("Failed to establish database connection")
-            print(f"{err.__class__.__name__}: {err}")
+            print('Failed to establish database connection')
+            print(f'{err.__class__.__name__}: {err}')
             return None
 
     def list_db_tables(self):
         '''List tables on database.
 
-        Returns:
-            list
+        Returns: 
+            list of table names
         '''
+
+        print('Fetching table names')
         try:
             inspector = inspect(self.engine)
             table_names = inspector.get_table_names()
             return table_names
         except Exception as err:
-            print("Failed to get table names")
-            print(f"{err.__class__.__name__}: {err}")
+            print('Failed to get table names')
+            print(f'{err.__class__.__name__}: {err}')
             return []
 
-    def upload_to_db(self, df, table_name):
+    def upload_to_db(self, df, table_name, if_exists='replace'):
         '''Upload Pandas dataframe to a table in the database.
+        If table exists, replace it.
 
         Arguments:
-            df: Pandas DataFrame
-            table_name: string (name of new table)
+            df (Pandas Dataframe): data to upload
+            table_name (str): name of table being created
+            if_exists (str): how to behave if table exists 
+                ('fail', 'replace', or 'append')
 
         Returns:
             None
         '''
 
+        print(f'Uploading table {table_name} to database')
         try:
-            print(f'Uploading table {table_name} to database')
-            df.to_sql(table_name, self.engine, if_exists="append")
+            msg = 'Incorrect if_exists parameter passed'
+            assert if_exists in ['fail', 'replace', 'append'], msg
+            df.to_sql(table_name, self.engine, if_exists='replace')
         except Exception as err:
-            print(f"Failed to upload table {table_name} to database")
-            print(f"{err.__class__.__name__}: {err}")
+            print(f'Failed to upload table {table_name} to database')
+            print(f'{err.__class__.__name__}: {err}')
 
 
 if __name__ == '__main__':
