@@ -16,13 +16,22 @@ from data_cleaning import DataCleaning
 
 if __name__ == '__main__':
 
-    db_connector_1 = DatabaseConnector("db_creds.yaml")
-    db_connector_1.init_db_engine()
-    df = DataExtractor.read_rds_table(db_connector_1, 'legacy_users')
-    df = DataCleaning().clean_data(df)
+    # Establish database connections
+    db_connector_aws = DatabaseConnector("db_creds.yaml")
+    db_connector_aws.init_db_engine()
 
-    db_connector_2 = DatabaseConnector("db_creds_sales_data.yaml")
-    db_connector_2.init_db_engine()
-    db_connector_2.upload_to_db(df, 'dim_users')
+    db_connector_local = DatabaseConnector("db_creds_sales_data.yaml")
+    db_connector_local.init_db_engine()
 
-    print(f'Table names: {db_connector_2.list_db_tables()}')
+    # Clean and load user data
+    users = DataExtractor.read_rds_table(db_connector_aws, 'legacy_users')
+    users = DataCleaning().clean_user_data(users)
+    db_connector_local.upload_to_db(users, 'dim_users')
+    print(f'Table names: {db_connector_local.list_db_tables()}')
+
+    # Clean and load card data
+    url = 'https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf'
+    card_details = DataExtractor.retrieve_pdf_data(url)
+    card_details = DataCleaning().clean_card_data(card_details)
+    db_connector_local.upload_to_db(card_details, 'dim_card_details')
+    print(f'Table names: {db_connector_local.list_db_tables()}')

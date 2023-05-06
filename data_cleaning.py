@@ -8,6 +8,7 @@ Date: 2023-05-06
 
 import numpy as np
 import pandas as pd
+from datetime import datetime
 from warnings import filterwarnings
 filterwarnings(
     'ignore', 'The default value of regex will change from True to False in a future version.')
@@ -15,17 +16,15 @@ filterwarnings(
 
 class DataCleaning:
     '''This class cleans the data in a Pandas dataframe.
-
-    Standardizes nulls, identifies and removes invalid data in 
-    name, country, country code, date, email address, and
-    phone number fields.
+    Includes methods for cleaning user data, card data; 
+    and static methods for cleaning specific types of columns.
 
     Attributes:
         None
     '''
 
-    def clean_data(self, df):
-        '''Clean data in Pandas dataframe.
+    def clean_user_data(self, df):
+        '''Clean user data (names, birthdates, contact details).
 
         (1) Standardize nulls; replace the string "NULL" with NaN.
         (2) Clean name and country fields; any records containing
@@ -45,16 +44,16 @@ class DataCleaning:
             Pandas DataFrame
         '''
 
-        print('Cleaning data')
+        print('Cleaning user data')
 
         alpha_cols = ['first_name', 'last_name', 'country']
         date_cols = ['date_of_birth', 'join_date']
 
-        df.replace(r'^NULL$', np.nan, regex=True, inplace=True)
+        df = self.standardize_nulls(df)
         df = self.clean_alpha_cols(df, alpha_cols)
         df.dropna(subset=['first_name', 'last_name'], inplace=True)
 
-        df = self.clean_date_cols(df, date_cols)
+        df = self.clean_date_cols(df, date_cols, future_dates_valid=False)
         df = self.clean_country_codes(df, ['country_code'], {'GGB': 'GB'})
         df = self.clean_phone_number(df, ['phone_number'])
         df = self.clean_email(df, ['email_address'])
@@ -62,21 +61,80 @@ class DataCleaning:
         print(f"Records in clean table: {len(df):,}")
         return df
 
+    def clean_card_data(self, df):
+        '''Clean card data: card numbers and dates.
+
+        Valid card numbers are expected to have a card_number 
+        comprising at least 8 numeric digits; a valid expiry date;
+        and a valid date_payment_confirmed not in the future. 
+        Identify and drop invalid records.
+
+        Arguments:
+            df (Pandas dataframe): input data for cleaning.
+                Expected to contain the following fields:
+                card_number, expiry_date, card_provider,
+                date_payment_confirmed
+
+        Return:
+            Pandas DataFrame
+        '''
+
+        print('Cleaning card data')
+
+        df = self.standardize_nulls(df)
+        df = self.clean_card_number(df, ['card_number'])
+
+        df = self.clean_date_cols(df, ['expiry_date'], date_format='%m/%y')
+        df = self.clean_date_cols(df, ['date_payment_confirmed'],
+                                  future_dates_valid=False)
+
+        columns = ['card_number', 'date_payment_confirmed', 'expiry_date']
+        df.dropna(subset=columns, inplace=True)
+        print(f"Records in clean table: {len(df):,}")
+        return df
+
     @staticmethod
-    def clean_date_cols(df, columns):
+    def standardize_nulls(df):
+        '''Standardize nulls; replace 'NULL' with NaN.
+
+        Arguments:
+            df (Pandas DataFrame)
+
+        Returns:
+            Pandas DataFrame
+
+        '''
+        df.replace(r'^NULL$', np.nan, regex=True, inplace=True)
+        return df
+
+    @staticmethod
+    def clean_date_cols(df, columns, date_format=None, future_dates_valid=True):
         '''Set invalid birthdates to NaT.
 
         Arguments:
             df (Pandas DataFrame)
             columns (list): column names for cleaning
+            date_format (string or None): format string 
+                describing the date format. If not passed,
+                format will be inferred.
+            future_dates_valid (bool): If False, dates in the
+                future will be treated as invalid.
 
         Returns:
             Pandas DataFrame
         '''
 
         for col in columns:
-            df[col] = pd.to_datetime(
-                df[col], infer_datetime_format=True, errors="coerce")
+            if date_format:
+                df[col] = pd.to_datetime(
+                    df[col], format=date_format, errors='coerce')
+            else:
+                df[col] = pd.to_datetime(
+                    df[col], infer_datetime_format=True, errors='coerce')
+
+            if not future_dates_valid:
+                future_dates = df[col] > datetime.now()
+                df.loc[future_dates, col] = np.nan
         return df
 
     @staticmethod
@@ -178,4 +236,25 @@ class DataCleaning:
             df[col] = df[col].str.replace(r'@+', '@')
             is_valid_email = df[col].str.contains(r'^[^@]+@[^@]+\.[^@\.]+$')
             df.loc[~is_valid_email, col] = np.nan
+        return df
+
+    @staticmethod
+    def clean_card_number(df, columns):
+        '''Clean credit card numbers.
+
+        Remove non-numeric characters. Credit card numbers are 
+        expected to contain > 8 digits (https://en.wikipedia.org/wiki/Payment_card_number);
+        identify credit card numbers with less than 8 digits and replace with NaN.
+
+        Arguments:
+            df (Pandas DataFrame)
+            columns (list): column names for cleaning
+
+        Returns:
+            Pandas DataFrame
+        '''
+
+        for col in columns:
+            df[col] = df[col].replace('[^0-9]+', '', regex=True)
+            df[col] = df[col].replace('^[0-9]{,7}$', np.nan, regex=True)
         return df
