@@ -4,11 +4,11 @@ import yaml
 
 class DatabaseConnector:
 
-    def __init__(self):
+    def __init__(self, file_name="db_creds.yaml"):
         self.engine = None
+        self.file_name = file_name
 
-    @staticmethod
-    def read_db_creds():
+    def read_db_creds(self):
         '''Reads database credentials from YAML file.
 
         Returns: 
@@ -16,7 +16,7 @@ class DatabaseConnector:
         '''
 
         try:
-            with open("db_creds.yaml", "r") as file:
+            with open(self.file_name, "r") as file:
                 return yaml.safe_load(file)
         except Exception as err:
             print("Failed to read database credentials")
@@ -35,6 +35,7 @@ class DatabaseConnector:
         '''
 
         try:
+            print('Connecting to database')
             db_creds = self.read_db_creds()
             user = db_creds['RDS_USER']
             password = db_creds['RDS_PASSWORD']
@@ -66,11 +67,28 @@ class DatabaseConnector:
             print(f"{err.__class__.__name__}: {err}")
             return []
 
+    def upload_to_db(self, df, table_name):
+        '''Upload Pandas dataframe to a table in the database.
+
+        Arguments:
+            df: Pandas DataFrame
+            table_name: string (name of new table)
+
+        Returns:
+            None
+        '''
+
+        try:
+            print(f'Uploading table {table_name} to database')
+            df.to_sql(table_name, self.engine, if_exists="append")
+        except Exception as err:
+            print(f"Failed to upload table {table_name} to database")
+            print(f"{err.__class__.__name__}: {err}")
+
 
 if __name__ == '__main__':
 
     db_connector = DatabaseConnector()
     engine = db_connector.init_db_engine()
-    engine.read_sql_table()
     table_names = db_connector.list_db_tables()
     print(table_names)

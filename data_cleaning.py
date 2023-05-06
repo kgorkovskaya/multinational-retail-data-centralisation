@@ -1,5 +1,8 @@
-import numy as np
+import numpy as np
 import pandas as pd
+from warnings import filterwarnings
+filterwarnings(
+    'ignore', 'The default value of regex will change from True to False in a future version.')
 
 
 class DataCleaning:
@@ -37,42 +40,36 @@ class DataCleaning:
                             regex=True, inplace=True)
         return df
 
-
     @staticmethod
-    df clean_phone_number(df, columns):
-       '''Clean phone number.
-        
+    def clean_phone_number(df, columns):
+        '''Clean phone number.
+
         Keep numerals, parens, x's and plus signs; replace everything else with empty string.
-            - Parens indicate an optional area code or prefix
-            - Plus sign indicates a country code,
-            - "X" indicates an extension.
+             - Parens indicate an optional area code or prefix
+             - Plus sign indicates a country code,
+             - "X" indicates an extension.
 
-        A phone number should contain at least 7 digits; anything with less than 7 digits 
-        after cleaning is invalid and is therefore replaced with a nan
-        '''
-
+         A phone number should contain at least 7 digits; anything with less than 7 digits 
+         after cleaning is invalid and is therefore replaced with a nan
+         '''
         for col in columns:
-        
             df[col].replace(r"[^0-9\(\)Xx\+]", "", regex=True, inplace=True)
             df[col] = df[col].astype(str)
-
             invalid_phone_no = df[col].str.replace(r'\D+', '').apply(len) < 7
             df.loc[invalid_phone_no, col] = np.nan
-
         return df
 
     @staticmethod
     def clean_email(df, columns):
 
         for col in columns:
-            df[col] = df[col]].astype(str).str.strip()
-            df[col].str.replace(r'@+', '@', inplace=True)
+            df[col] = df[col].astype(str).str.strip()
+            df[col] = df[col].str.replace(r'@+', '@')
             is_valid_email = df[col].str.contains(r'^[^@]+@[^@]+\.[^@\.]+$')
             df.loc[~is_valid_email, col] = np.nan
         return df
 
-    @staticmethod
-    def clean_data(df):
+    def clean_data(self, df):
         '''Clean data.
 
         (1) Deal with "NULL"s; replace the string "NULL" with NaN.
@@ -90,6 +87,8 @@ class DataCleaning:
             Pandas DataFrame
         '''
 
+        print('Cleaning data')
+
         alpha_cols = ['first_name', 'last_name', 'country']
         date_cols = ['date_of_birth', 'join_date']
         country_code_replacements = {'GGB': 'GB'}
@@ -100,11 +99,10 @@ class DataCleaning:
         df.dropna(subset=['first_name', 'last_name'], inplace=True)
 
         df = self.clean_date_cols(df, date_cols)
-        df = self.clean_country_code(df, ['country_code'], country_code_replacements)
-        df = self.clean_phone_number(['phone_number'])
-        df = self.clean_email(['email_address'])
+        df = self.clean_country_codes(
+            df, ['country_code'], country_code_replacements)
+        df = self.clean_phone_number(df, ['phone_number'])
+        df = self.clean_email(df, ['email_address'])
 
+        print(f"Records in clean table: {len(df):,}")
         return df
-
-
-

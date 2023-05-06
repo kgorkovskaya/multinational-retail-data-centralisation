@@ -17,10 +17,12 @@ class DataExtractor:
             Pandas DataFrame
         '''
 
+        print(f'Reading RDS table {table_name}')
         try:
             query = f"SELECT * from {table_name};"
             with db_connector.engine.connect() as con:
                 df = pd.read_sql_query(sql=text(query), con=con)
+                print(f"Records loaded: {len(df):,}")
                 return df
 
         except Exception as err:
@@ -33,7 +35,4 @@ if __name__ == '__main__':
 
     db_connector = DatabaseConnector()
     db_connector.init_db_engine()
-
     df = DataExtractor.read_rds_table(db_connector, 'legacy_users')
-    print(df.shape)
-    print(df.head())
