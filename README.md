@@ -10,5 +10,6 @@ Collate and analyse data from various sources, to create a centralised sales dat
 
 - Load user details from PostgreSQL database hosted on AWS into a Pandas DataFrame. Clean the data; remove records where a valid name is not present. Load to __sales_data.dim_users__
 - Load credit card details from PDF file. Clean the data; remove records where valid card details are not present. Load to __sales_data.dim_card_details__
+- Load store details from API. Clean the data; remove invalid/null records. Load to __sales_data.dim_store_details__
 
 
