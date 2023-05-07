@@ -35,3 +35,15 @@ if __name__ == '__main__':
     card_details = DataCleaning().clean_card_data(card_details)
     db_connector_local.upload_to_db(card_details, 'dim_card_details')
     print(f'Table names: {db_connector_local.list_db_tables()}')
+
+    # Clean and load store data
+    url = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/number_stores'
+    headers = {'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'}
+    num_stores = DataExtractor.list_number_of_stores(url, headers)
+
+    url = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/{store_no}'
+    store_details = DataExtractor.retrieve_stores_data(
+        url, headers, num_stores)
+
+    # db_connector_local.upload_to_db(store_details, 'dim_store_details')
+    # print(f'Table names: {db_connector_local.list_db_tables()}')

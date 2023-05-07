@@ -9,6 +9,7 @@ Date: 2023-05-06
 import numpy as np
 import pandas as pd
 from datetime import datetime
+from utils import time_it
 from warnings import filterwarnings
 filterwarnings(
     'ignore', 'The default value of regex will change from True to False in a future version.')
@@ -23,6 +24,7 @@ class DataCleaning:
         None
     '''
 
+    @time_it
     def clean_user_data(self, df):
         '''Clean user data (names, birthdates, contact details).
 
@@ -61,6 +63,7 @@ class DataCleaning:
         print(f"Records in clean table: {len(df):,}")
         return df
 
+    @time_it
     def clean_card_data(self, df):
         '''Clean card data: card numbers and dates.
 
