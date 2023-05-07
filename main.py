@@ -14,6 +14,7 @@ from database_utils import DatabaseConnector
 from data_extraction import DataExtractor
 from data_cleaning import DataCleaning
 
+
 if __name__ == '__main__':
 
     # Establish database connections
@@ -27,14 +28,14 @@ if __name__ == '__main__':
     users = DataExtractor.read_rds_table(db_connector_aws, 'legacy_users')
     users = DataCleaning().clean_user_data(users)
     db_connector_local.upload_to_db(users, 'dim_users')
-    print(f'Table names: {db_connector_local.list_db_tables()}')
+    db_connector_local.print_db_tables()
 
     # Clean and load card data
     url = 'https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf'
     card_details = DataExtractor.retrieve_pdf_data(url)
     card_details = DataCleaning().clean_card_data(card_details)
     db_connector_local.upload_to_db(card_details, 'dim_card_details')
-    print(f'Table names: {db_connector_local.list_db_tables()}')
+    db_connector_local.print_db_tables()
 
     # Clean and load store data
     url = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/number_stores'
@@ -44,6 +45,6 @@ if __name__ == '__main__':
     url = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/{store_no}'
     store_details = DataExtractor.retrieve_stores_data(
         url, headers, num_stores)
-
-    # db_connector_local.upload_to_db(store_details, 'dim_store_details')
-    # print(f'Table names: {db_connector_local.list_db_tables()}')
+    store_details = DataCleaning().clean_store_data(store_details)
+    db_connector_local.upload_to_db(store_details, 'dim_store_details')
+    db_connector_local.print_db_tables()

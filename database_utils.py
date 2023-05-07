@@ -87,6 +87,12 @@ class DatabaseConnector:
             print(f'{err.__class__.__name__}: {err}')
             return []
 
+    def print_db_tables(self):
+        '''Pretty-print list of tables on database.
+        '''
+        tables = self.list_db_tables()
+        print('\t' + '\n\t'.join(sorted(tables)))
+
     def upload_to_db(self, df, table_name, if_exists='replace'):
         '''Upload Pandas dataframe to a table in the database.
         If table exists, replace it.

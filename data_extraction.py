@@ -39,7 +39,7 @@ class DataExtractor:
             Pandas DataFrame
         '''
 
-        print(f'Reading table {table_name}')
+        print(f'Reading database table {table_name}')
         try:
             query = f"SELECT * from {table_name};"
             with db_connector.engine.connect() as con:
@@ -86,12 +86,12 @@ class DataExtractor:
             int: number of stores
         '''
 
-        print('Getting number of stores from API')
+        print('Getting number of stores from API: ' + url)
         try:
             r = requests.get(url, headers=headers)
             assert r.status_code == 200, f'Request failed with status {r.status_code}'
             num_stores = r.json()['number_stores']
-            print(f'\tNumber of stores: {num_stores:,}')
+            print(f'\t{num_stores:,} stores')
             return num_stores
         except Exception as err:
             print(f'Failed to get number of stores')
@@ -112,7 +112,7 @@ class DataExtractor:
             Pandas DataFrame
         '''
 
-        print('Retrieving store details from API')
+        print('Retrieving store details from API: ' + endpoint)
         try:
             store_data = []
             for store_no in range(num_stores):

@@ -17,7 +17,7 @@ def time_it(func):
         start = time()
         result = func(*args, **kwargs)
         if isinstance(result, pd.core.frame.DataFrame):
-            print(f'\t{len(result):,} records loade')
+            print(f'\tRecords: {len(result):,}')
         print(f'\tRun time: {time() - start:.4f} seconds')
         return result
     return wrapper

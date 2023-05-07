@@ -17,12 +17,19 @@ filterwarnings(
 
 class DataCleaning:
     '''This class cleans the data in a Pandas dataframe.
-    Includes methods for cleaning user data, card data; 
+    Includes methods for cleaning user data, card data, store data; 
     and static methods for cleaning specific types of columns.
 
     Attributes:
-        None
+        continents (list): valid continents
+        country_codes (list): valid country codes
     '''
+
+    def __init__(self):
+        '''See help(DataCleaning) for accurate signature.'''
+
+        self.continents = ['Europe', 'America']
+        self.country_codes = ['DE', 'GB', 'US']
 
     @time_it
     def clean_user_data(self, df):
@@ -48,19 +55,25 @@ class DataCleaning:
 
         print('Cleaning user data')
 
-        alpha_cols = ['first_name', 'last_name', 'country']
-        date_cols = ['date_of_birth', 'join_date']
-
         df = self.standardize_nulls(df)
-        df = self.clean_alpha_cols(df, alpha_cols)
-        df.dropna(subset=['first_name', 'last_name'], inplace=True)
 
-        df = self.clean_date_cols(df, date_cols, future_dates_valid=False)
-        df = self.clean_country_codes(df, ['country_code'], {'GGB': 'GB'})
-        df = self.clean_phone_number(df, ['phone_number'])
-        df = self.clean_email(df, ['email_address'])
+        alpha_columns = ['first_name', 'last_name', 'country']
+        df = self.clean_alpha_cols(df, alpha_columns)
 
-        print(f"Records in clean table: {len(df):,}")
+        date_columns = ['date_of_birth', 'join_date']
+        df = self.clean_dates(df, date_columns, future_dates_valid=False)
+
+        df['country_code'].replace('GGB', 'GB', inplace=True)
+        df = self.clean_categories(
+            df, ['country_code'], expected_categories=self.country_codes)
+
+        df = self.clean_phone_numbers(df, ['phone_number'])
+
+        df = self.clean_emails(df, ['email_address'])
+
+        non_null_columns = ['first_name', 'last_name']
+        df.dropna(subset=non_null_columns, inplace=True)
+
         return df
 
     @time_it
@@ -85,34 +98,151 @@ class DataCleaning:
         print('Cleaning card data')
 
         df = self.standardize_nulls(df)
-        df = self.clean_card_number(df, ['card_number'])
 
-        df = self.clean_date_cols(df, ['expiry_date'], date_format='%m/%y')
-        df = self.clean_date_cols(df, ['date_payment_confirmed'],
-                                  future_dates_valid=False)
+        df = self.clean_card_numbers(df, ['card_number'])
 
-        columns = ['card_number', 'date_payment_confirmed', 'expiry_date']
-        df.dropna(subset=columns, inplace=True)
-        print(f"Records in clean table: {len(df):,}")
+        df = self.clean_dates(df, ['expiry_date'], date_format='%m/%y')
+
+        df = self.clean_dates(df, ['date_payment_confirmed'],
+                              future_dates_valid=False)
+
+        non_null_columns = ['card_number',
+                            'date_payment_confirmed', 'expiry_date']
+        df.dropna(subset=non_null_columns, inplace=True)
+        return df
+
+    @time_it
+    def clean_store_data(self, df):
+        '''Clean store data.
+        Identify and drop invalid records (a store is expected
+        to have a store code, store_type, and country code)
+
+        Arguments:
+            df (Pandas dataframe): input data for cleaning.
+                Expected to contain the following fields:
+                index, address, longitude, latitude, locality,
+                store_code, staff_numbers, opening_date, store_type,
+                country_code, continent
+
+        Return:
+            Pandas DataFrame
+        '''
+
+        print('Cleaning store details')
+
+        df = self.standardize_nulls(df)
+
+        # Input data has duplicate fields: lat and latitude
+        # lat is redundant and not populated with valid data;
+        # therefore is dropped if more than 50% null
+
+        if 'lat' in df:
+            if sum(df['lat'].isnull()) / len(df) > 0.5:
+                df.drop('lat', axis=1, inplace=True)
+
+        df = self.clean_dates(df, ['opening_date'])
+
+        df = self.clean_categories(
+            df, ['country_code'], expected_categories=self.country_codes)
+
+        # Some continents have been incorrectly entered
+        # with an "ee" prefix ("eeAmerica", "eeEurope");
+        # fix the typos before calling clean_categories
+
+        df['continent'] = df['continent'].astype(str)
+        df['continent'] = df['continent'].str.replace(r'^ee', '')
+        df['continent'] = df['continent'].str.capitalize()
+        df = self.clean_categories(df, ['continent'], self.continents)
+
+        alpha_columns = ['store_type', 'locality']
+        df = self.clean_alpha_cols(df, alpha_columns)
+
+        numeric_columns = ['latitude', 'longitude', 'staff_numbers']
+        df = self.clean_numeric_cols(df, numeric_columns)
+
+        non_null_columns = ['address', 'store_type', 'country_code']
+        df.dropna(subset=non_null_columns, inplace=True)
+
         return df
 
     @staticmethod
     def standardize_nulls(df):
-        '''Standardize nulls; replace 'NULL' with NaN.
+        '''Standardize nulls in Pandas DataFrame; replace "NULL" with NaN.
 
         Arguments:
             df (Pandas DataFrame)
 
         Returns:
             Pandas DataFrame
-
         '''
-        df.replace(r'^NULL$', np.nan, regex=True, inplace=True)
+
+        df.replace([r'^NULL$', '^N/A$'], np.nan, regex=True, inplace=True)
         return df
 
     @staticmethod
-    def clean_date_cols(df, columns, date_format=None, future_dates_valid=True):
-        '''Set invalid birthdates to NaT.
+    def clean_alpha_cols(df, columns):
+        '''Some fields (e.g. names, countries) are not expected to contain numerals;
+        Treat any values with numerals as invalid and replace with NaN
+
+        Arguments:
+            df (Pandas DataFrame)
+            columns (list): column names for cleaning
+
+        Returns:
+            Pandas DataFrame
+        '''
+
+        for col in columns:
+            df[col].replace({r'.*[0-9].*': np.nan}, regex=True, inplace=True)
+        return df
+
+    @staticmethod
+    def clean_card_numbers(df, columns):
+        '''Clean credit card numbers.
+
+        Remove non-numeric characters. Credit card numbers are expected
+        to contain > 8 digits (https://en.wikipedia.org/wiki/Payment_card_number);
+        identify values with less than 8 digits and replace with NaN.
+
+        Arguments:
+            df (Pandas DataFrame)
+            columns (list): column names for cleaning
+
+        Returns:
+            Pandas DataFrame
+        '''
+
+        for col in columns:
+            df[col] = df[col].replace('[^0-9]+', '', regex=True)
+            df[col] = df[col].replace('^[0-9]{,7}$', np.nan, regex=True)
+        return df
+
+    @staticmethod
+    def clean_categories(df, columns, expected_categories):
+        '''Clean columns that are expected to contain categorical
+        values (e.g. country codes, continents, etc.) 
+        Identify invalid values; replace with NaN.
+
+        Arguments:
+            df (Pandas DataFrame)
+            columns (list): column names for cleaning
+            expected_categories (list): list of valid values
+
+        Returns:
+            Pandas DataFrame
+        '''
+
+        for col in columns:
+            df[col] = df[col].astype(str).str.strip()
+            df[col] = df[col].astype('category')
+            invalid = ~df[col].isin(expected_categories)
+            df.loc[invalid, col] = np.nan
+
+        return df
+
+    @staticmethod
+    def clean_dates(df, columns, date_format=None, future_dates_valid=True):
+        '''Set invalid dates to NaT.
 
         Arguments:
             df (Pandas DataFrame)
@@ -138,84 +268,11 @@ class DataCleaning:
             if not future_dates_valid:
                 future_dates = df[col] > datetime.now()
                 df.loc[future_dates, col] = np.nan
+
         return df
 
     @staticmethod
-    def clean_alpha_cols(df, columns):
-        '''Some fields (e.g. names, countries) are not expected to contain numerals;
-        Treat any values with numerals as invalid and replace with NaN
-
-        Arguments:
-            df (Pandas DataFrame)
-            columns (list): column names for cleaning
-
-        Returns:
-            Pandas DataFrame
-        '''
-
-        for col in columns:
-            df[col].replace({r'.*[0-9].*': np.nan}, regex=True, inplace=True)
-        return df
-
-    @staticmethod
-    def clean_country_codes(df, columns, replacements=dict()):
-        '''Country code fields are expected to contain alpha characters only.
-        The replacements parameter is an optional dict of known incorrect country
-        codes and their replacements.
-
-        Arguments:
-            df (Pandas DataFrame)
-            columns (list): column names for cleaning
-
-        Returns:
-            Pandas DataFrame
-        '''
-
-        country_code_replacements = {r'.*[^A-Z].*': np.nan}
-        country_code_replacements.update(replacements)
-
-        for col in columns:
-            df[col] = df[col].astype(str).str.strip().str.upper()
-            df[col].replace(country_code_replacements,
-                            regex=True, inplace=True)
-        return df
-
-    @staticmethod
-    def clean_phone_number(df, columns):
-        '''Clean phone numbers.
-
-        Keep numerals, parentheses, x's and plus signs; replace 
-        everything else with empty string. Parentheses, x's and 
-        plus signs are likely to be meaningful components of the phone number. 
-
-             - Parens indicate an optional area code or prefix
-             - Plus sign indicates a country code,
-             - "X" indicates an extension.
-
-        Input data is inconsistently formatted and may be corrupted if 
-        components such as country codes and area codes are deleted; therefore 
-        a cautious approach is used.
-
-        A phone number is expected to contain at least 7 digits; anything with 
-        less than 7 digits after cleaning is invalid and is therefore replaced with NaN.
-
-        Arguments:
-            df (Pandas DataFrame)
-            columns (list): column names for cleaning
-
-        Returns:
-            Pandas DataFrame
-        '''
-
-        for col in columns:
-            df[col].replace(r"[^0-9\(\)Xx\+]", "", regex=True, inplace=True)
-            df[col] = df[col].astype(str)
-            invalid_phone_no = df[col].str.replace(r'\D+', '').apply(len) < 7
-            df.loc[invalid_phone_no, col] = np.nan
-        return df
-
-    @staticmethod
-    def clean_email(df, columns):
+    def clean_emails(df, columns):
         '''Clean email addresses.
 
         Replace multiple consecutive @ signs with one @.
@@ -236,18 +293,17 @@ class DataCleaning:
 
         for col in columns:
             df[col] = df[col].astype(str).str.strip()
-            df[col] = df[col].str.replace(r'@+', '@')
+            df[col] = df[col].str.replace(r'@{2,}', '@')
             is_valid_email = df[col].str.contains(r'^[^@]+@[^@]+\.[^@\.]+$')
             df.loc[~is_valid_email, col] = np.nan
         return df
 
     @staticmethod
-    def clean_card_number(df, columns):
-        '''Clean credit card numbers.
-
-        Remove non-numeric characters. Credit card numbers are 
-        expected to contain > 8 digits (https://en.wikipedia.org/wiki/Payment_card_number);
-        identify credit card numbers with less than 8 digits and replace with NaN.
+    def clean_numeric_cols(df, columns):
+        '''Some fields are expected to be numeric.
+        These might be stored as ints, floats, or strings.
+        Identify invalid records (records containing characters
+        other than digits, minus signs and decimal points) and set to NaN.
 
         Arguments:
             df (Pandas DataFrame)
@@ -258,6 +314,43 @@ class DataCleaning:
         '''
 
         for col in columns:
-            df[col] = df[col].replace('[^0-9]+', '', regex=True)
-            df[col] = df[col].replace('^[0-9]{,7}$', np.nan, regex=True)
+            df[col] = df[col].astype(str).str.strip()
+            df[col].replace({r'.*[^0-9\.-].*': np.nan},
+                            regex=True, inplace=True)
+            df[col] = df[col].astype(float)
+        return df
+
+    @staticmethod
+    def clean_phone_numbers(df, columns):
+        '''Clean phone numbers.
+
+        Keep numerals, parentheses, x's and plus signs; strip 
+        all other characters. Parentheses, x's and plus signs are 
+        likely to be meaningful components of the phone number. 
+
+        - Parens indicate an optional area code or prefix
+        - Plus sign indicates a country code,
+        - "X" indicates an extension.
+
+        Input data is inconsistently formatted and may be corrupted if 
+        components such as country codes and area codes are deleted; therefore 
+        a cautious approach is used.
+
+        A phone number is expected to contain at least 7 digits; anything with 
+        less than 7 digits after cleaning is invalid and is therefore replaced 
+        with NaN.
+
+        Arguments:
+            df (Pandas DataFrame)
+            columns (list): column names for cleaning
+
+        Returns:
+            Pandas DataFrame
+        '''
+
+        for col in columns:
+            df[col].replace(r"[^0-9\(\)Xx\+]", "", regex=True, inplace=True)
+            df[col] = df[col].astype(str)
+            invalid_phone_no = df[col].str.replace(r'\D+', '').apply(len) < 7
+            df.loc[invalid_phone_no, col] = np.nan
         return df
