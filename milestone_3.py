@@ -126,6 +126,7 @@ def alter_table(engine, column_name, table_name, data_type):
         con.execute(text(sql))
 
 
+@time_it
 def update_table(engine, table_name, column_names):
     '''Update tables.
     dim_store_details:
