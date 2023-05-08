@@ -17,6 +17,15 @@ from sqlalchemy import text
 from utils import time_it
 
 
+def print_newline(func):
+    '''Decorator which prints line break before executing a function'''
+
+    def wrapper(*args, **kwargs):
+        print('\n')
+        return func(*args, **kwargs)
+    return wrapper
+
+
 class DataExtractor:
     '''This class extracts data from a variety of input sources
     into a Pandas dataframe. Input sources:
@@ -31,6 +40,7 @@ class DataExtractor:
 
     @staticmethod
     @time_it
+    @print_newline
     def extract_from_s3(path):
         '''Download CSV data from S3 bucket; create Pandas DataFrame.
 
@@ -58,6 +68,8 @@ class DataExtractor:
             return pd.DataFrame()
 
     @staticmethod
+    @time_it
+    @print_newline
     def list_number_of_stores(url, headers=dict()):
         '''Retrive number of stores from API.
 
@@ -82,6 +94,7 @@ class DataExtractor:
 
     @staticmethod
     @time_it
+    @print_newline
     def read_json(url, headers=dict()):
         '''Read JSON data from URL into Pandas dataframe.
 
@@ -105,6 +118,7 @@ class DataExtractor:
 
     @staticmethod
     @time_it
+    @print_newline
     def read_rds_table(db_connector, table_name):
         '''Read all rows from database table into Pandas dataframe.
 
@@ -117,7 +131,8 @@ class DataExtractor:
         '''
 
         try:
-            print('Reading database table ' + table_name)
+            db_name = db_connector.engine.url.database
+            print(f'Reading data from RDS table: {db_name}.dbo.{table_name}')
             query = f"SELECT * from {table_name};"
             with db_connector.engine.connect() as con:
                 df = pd.read_sql_query(sql=text(query), con=con)
@@ -130,6 +145,7 @@ class DataExtractor:
 
     @staticmethod
     @time_it
+    @print_newline
     def retrieve_pdf_data(url):
         '''Read PDF file into a Pandas dataframe.
 
@@ -153,6 +169,7 @@ class DataExtractor:
 
     @staticmethod
     @time_it
+    @print_newline
     def retrieve_stores_data(endpoint, headers, num_stores=1):
         '''Retrieve store details from API.
 

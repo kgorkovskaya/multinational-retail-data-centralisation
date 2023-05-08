@@ -32,7 +32,7 @@ class DatabaseConnector:
             dict
         '''
 
-        print(f'Loading credentials from file {self.file_name}')
+        print(f'Loading database credentials from file: {self.file_name}')
         try:
             with open(self.file_name, 'r') as file:
                 return yaml.safe_load(file)
@@ -60,7 +60,7 @@ class DatabaseConnector:
             port = db_creds['RDS_PORT']
             database = db_creds['RDS_DATABASE']
 
-            print(f'Connecting to database {database}')
+            print(f'Connecting to database: {database}')
             cxn_string = f'{db_type}+{db_api}://{user}:{password}@{host}:{port}/{database}'
             self.engine = create_engine(cxn_string)
             return self.engine
@@ -89,7 +89,7 @@ class DatabaseConnector:
     def print_db_tables(self):
         '''Pretty-print list of tables on database.
         '''
-        print(f'Tables in {engine.url.database}:')
+        print(f'\nTables in {self.engine.url.database}:')
         tables = self.list_db_tables()
         print('\t' + '\n\t'.join(sorted(tables)))
 
@@ -107,8 +107,10 @@ class DatabaseConnector:
             None
         '''
 
-        print(f'Uploading table {table_name} to database')
         try:
+            db_name = self.engine.url.database
+            print(
+                f'Writing data to RDS table: {db_name}.dbo.{table_name}')
             msg = 'Incorrect if_exists parameter passed'
             assert if_exists in ['fail', 'replace', 'append'], msg
             df.to_sql(table_name, self.engine, if_exists='replace')

@@ -13,5 +13,6 @@ Extract data from various sources; load each dataset into a Pandas Dataframe; st
 - Credit card details sourced from PDF file; loaded to __sales_data.dim_card_details__
 - Store details sourced from API; loaded to __sales_data.dim_store_details__
 - Product details sourced from S3; loaded to __sales_data.dim_products__
+- Date events sourced from JSON; loaded to __sales_data.dim_date_times__
 
 
