@@ -32,9 +32,9 @@ if __name__ == '__main__':
 
     # Clean and load card data
     url = 'https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf'
-    card_details = DataExtractor.retrieve_pdf_data(url)
-    card_details = DataCleaning().clean_card_data(card_details)
-    db_connector_local.upload_to_db(card_details, 'dim_card_details')
+    df = DataExtractor.retrieve_pdf_data(url)
+    df = DataCleaning().clean_card_data(df)
+    db_connector_local.upload_to_db(df, 'dim_card_details')
     db_connector_local.print_db_tables()
 
     # Clean and load store data
@@ -43,12 +43,14 @@ if __name__ == '__main__':
     num_stores = DataExtractor.list_number_of_stores(url, headers)
 
     url = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/{store_no}'
-    store_details = DataExtractor.retrieve_stores_data(
-        url, headers, num_stores)
-    store_details = DataCleaning().clean_store_data(store_details)
-    db_connector_local.upload_to_db(store_details, 'dim_store_details')
+    df = DataExtractor.retrieve_stores_data(url, headers, num_stores)
+    df = DataCleaning().clean_store_data(df)
+    db_connector_local.upload_to_db(df, 'dim_store_details')
     db_connector_local.print_db_tables()
 
-    # Clean and load address data
+    # Clean and load products data
     s3_address = 's3://data-handling-public/products.csv'
     df = DataExtractor.extract_from_s3(s3_address)
+    df = DataCleaning().clean_products_data(df)
+    db_connector_local.upload_to_db(df, 'dim_products')
+    db_connector_local.print_db_tables()

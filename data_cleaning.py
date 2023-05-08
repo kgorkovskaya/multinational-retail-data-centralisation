@@ -145,6 +145,8 @@ class DataCleaning:
             Pandas DataFrame
         '''
 
+        print('Cleaning product data')
+
         df = self.convert_product_weights(df, ['weight'])
 
         df = self.clean_numeric_cols(df, ['product_price'], currency_code='£')
