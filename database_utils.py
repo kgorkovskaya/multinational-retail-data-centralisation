@@ -112,7 +112,7 @@ class DatabaseConnector:
                 f'Writing data to RDS table: {db_name}.dbo.{table_name}')
             msg = 'Incorrect if_exists parameter passed'
             assert if_exists in ['fail', 'replace', 'append'], msg
-            df.to_sql(table_name, self.engine, if_exists='replace')
+            df.to_sql(table_name, self.engine, if_exists=if_exists)
         except Exception as err:
             print(f'Failed to upload table {table_name} to database')
             print(f'{err.__class__.__name__}: {err}')
