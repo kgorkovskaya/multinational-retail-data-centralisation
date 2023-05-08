@@ -1,13 +1,14 @@
 '''
 AiCore Multinational Retail Data Centralisation Project
-Extract and clean user data.
 
-Connect to PostgreSQL AWS database; read the legacy_users
-table into a Pandas dataframe; write to a new table (dim_users)
-on local PostgreSQL database.
+Milestone 2: Extract and clean source data
+
+Extract data from various sources; load each dataset into a Pandas Dataframe; 
+standardize; identify and remove invalid records; load each dataset to a table 
+on a local PostgreSQL database.
 
 Author: Kristina Gorkovskaya
-Date: 2023-05-06
+Date: 2023-05-08
 '''
 
 from database_utils import DatabaseConnector

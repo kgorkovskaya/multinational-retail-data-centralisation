@@ -292,6 +292,22 @@ class DataCleaningGeneric:
 
         return df
 
+    @staticmethod
+    def drop_unwanted_columns(df, unwanted_columns=[]):
+        '''Drop spurious/unwanted columns from dataframe.
+
+        Arguments:
+            df (Pandas DataFrame)
+            unwanted_columns (list): column names to be dropped
+
+        Returns:
+            Pandas DataFrame
+        '''
+        for column in unwanted_columns:
+            if column in df:
+                df.drop(column, axis=1, inplace=True)
+        return df
+
 
 class DataCleaning(DataCleaningGeneric):
     '''This class cleans the data in a Pandas dataframe.
@@ -406,9 +422,7 @@ class DataCleaning(DataCleaningGeneric):
         '''
 
         unwanted_columns = ['level_0', 'index', 'first_name', 'last_name', '1']
-        for column in unwanted_columns:
-            if column in df:
-                df.drop(column, axis=1, inplace=True)
+        df = self.drop_unwanted_columns(df, unwanted_columns)
 
         df = self.clean_card_numbers(df, ['card_number'])
         df = self.clean_numeric_cols(df, ['product_quantity'])
@@ -532,6 +546,9 @@ class DataCleaning(DataCleaningGeneric):
         Return:
             Pandas DataFrame
         '''
+
+        unwanted_columns = ['level_0', 'index', '1']
+        df = self.drop_unwanted_columns(df, unwanted_columns)
 
         alpha_columns = ['first_name', 'last_name', 'country']
         df = self.clean_alpha_cols(df, alpha_columns)
