@@ -61,3 +61,8 @@ if __name__ == '__main__':
     # Clean and load date events
     url = 'https://data-handling-public.s3.eu-west-1.amazonaws.com/date_details.json'
     df = DataExtractor.read_json(url)
+    df = DataCleaning().clean_date_time_data(df)
+    db_connector_local.upload_to_db(df, 'dim_date_times')
+
+    # Display table names on local DB
+    db_connector_local.print_db_tables()

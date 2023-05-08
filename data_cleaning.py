@@ -279,6 +279,7 @@ class DataCleaning(DataCleaningGeneric):
     Attributes:
         continents (list): valid continents
         country_codes (list): valid country codes
+        time_periods (list): valid time periods
     '''
 
     def __init__(self):
@@ -287,55 +288,54 @@ class DataCleaning(DataCleaningGeneric):
         super().__init__()
         self.continents = ['Europe', 'America']
         self.country_codes = ['DE', 'GB', 'US']
+        self.time_periods = ['Evening', 'Morning', 'Midday', 'Late_Hours']
 
     @time_it
     @standardize_nulls
-    def clean_user_data(self, df):
-        '''Clean user data (names, birthdates, contact details).
-
-        (1) Standardize nulls; replace the string "NULL" with NaN.
-        (2) Clean name and country fields; any records containing
-            numerals are treated as invalid and replaced with NaN. 
-        (3) Valid users are expected to have a complete first_name 
-            and last_name; drop rows without valid names.
-        (4) Clean dates, country codes, phone numbers, email addresses.
-            Identify invalid values; replace with NaN.
+    def clean_date_time_data(self, df):
+        '''Clean date time data. Identify invalid day, month,
+        year, timestamp, and ptime period values; drop 
+        invalid records.
 
         Arguments:
             df (Pandas dataframe): input data for cleaning.
                 Expected to contain the following fields:
-                first_name, last_name, country, date_of_birth, 
-                join_date, phone_number, email_address
+                timestamp, month, year, day, time_period, date_uuid
 
-        Return:
+        Returns:
             Pandas DataFrame
         '''
 
-        print('Cleaning user data')
+        print('Cleaning date event data')
 
-        alpha_columns = ['first_name', 'last_name', 'country']
-        df = self.clean_alpha_cols(df, alpha_columns)
+        numeric_columns = ['month', 'day', 'year']
+        df = self.clean_numeric_cols(df, numeric_columns)
 
-        date_columns = ['date_of_birth', 'join_date']
-        df = self.clean_dates(df, date_columns, future_dates_valid=False)
-
-        df['country_code'].replace('GGB', 'GB', inplace=True)
         df = self.clean_categories(
-            df, ['country_code'], expected_categories=self.country_codes)
+            df, ['time_period'], expected_categories=self.time_periods)
 
-        df = self.clean_phone_numbers(df, ['phone_number'])
+        # Use pd.to_datetime to identify and drop records with invalid timestamps;
+        # but don't convert the timestamp column to a datetime object, as this
+        # will set the YYYY-MM-DD componen to 1901-01-01
 
-        df = self.clean_emails(df, ['email_address'])
+        is_valid_timestamp = pd.to_datetime(
+            df.timestamp, format='%H:%M:%S', errors='coerce').notnull()
 
-        non_null_columns = ['first_name', 'last_name']
-        df.dropna(subset=non_null_columns, inplace=True)
+        df = df.loc[is_valid_timestamp, :].dropna()
 
+        # Set day / month / year columns to int;
+        # because they contained NaN's, they were stored
+        # as float. Now that NaN's have been removed, these
+        # columns can be set to int to save space.
+
+        for col in numeric_columns:
+            df[col] = df[col].astype(int)
         return df
 
     @time_it
     @standardize_nulls
     def clean_card_data(self, df):
-        '''Clean card data: card numbers and dates.
+        '''Clean credit card data: standardize card numbers and dates.
 
         Valid card numbers are expected to have a card_number 
         comprising at least 8 numeric digits; a valid expiry date;
@@ -369,14 +369,15 @@ class DataCleaning(DataCleaningGeneric):
     @time_it
     @standardize_nulls
     def clean_orders_data(self, df):
-        ''' Clean orders data.
-        Replace spurious columns and invalid records.
+        ''' Clean orders data. 
+        Drop spurious columns. Standardize card number and product
+        quantity columns; identify and drop invalid records.
 
         Arguments:
             df (Pandas dataframe): input data for cleaning.
                 Expected to contain the following fields:
                 level_0, index, date_uuid, first_name, last_name, user_uuid,
-                card_number, store_code, product_code, 1, product_quantity],
+                card_number, store_code, product_code, 1, product_quantity
 
         Return:
             Pandas dataframe
@@ -398,9 +399,9 @@ class DataCleaning(DataCleaningGeneric):
     def clean_products_data(self, df):
         '''Clean product data.
 
-        Convert product weights to kilograms; convert product price
-        to float; standardize dates; replace invalid categories with NaN, 
-        fix typo in removed column.
+        Convert product weights to kilograms; strip currency symbol 
+        from product prices and convert product prices to float; standardize dates; 
+        replace invalid categories with NaN, fix typo in removed column.
 
         Identify and drop invalid records (a product record is expected
         to be 100 % complete).
@@ -437,9 +438,12 @@ class DataCleaning(DataCleaningGeneric):
     @time_it
     @standardize_nulls
     def clean_store_data(self, df):
-        '''Clean store data.
+        '''Clean store data. Standardize dates, country codes,
+        continents, numeric columns (latitude, longitude, staff numbers)
+        and non-numeric columns (store type, locality).
+
         Identify and drop invalid records (a store is expected
-        to have a store code, store_type, and country code)
+        to have a valid store code, store_type, and country code)
 
         Arguments:
             df (Pandas dataframe): input data for cleaning.
@@ -483,6 +487,49 @@ class DataCleaning(DataCleaningGeneric):
         df = self.clean_numeric_cols(df, numeric_columns)
 
         non_null_columns = ['address', 'store_type', 'country_code']
+        df.dropna(subset=non_null_columns, inplace=True)
+
+        return df
+
+    @time_it
+    @standardize_nulls
+    def clean_user_data(self, df):
+        '''Clean user data.
+
+        (1) Clean name and country fields; any records containing
+            numerals are treated as invalid and replaced with NaN. 
+        (2) Valid users are expected to have a complete first_name 
+            and last_name; drop rows without valid names.
+        (3) Clean dates, country codes, phone numbers, email addresses.
+            Identify invalid values; replace with NaN.
+
+        Arguments:
+            df (Pandas dataframe): input data for cleaning.
+                Expected to contain the following fields:
+                first_name, last_name, country, date_of_birth, 
+                join_date, phone_number, email_address
+
+        Return:
+            Pandas DataFrame
+        '''
+
+        print('Cleaning user data')
+
+        alpha_columns = ['first_name', 'last_name', 'country']
+        df = self.clean_alpha_cols(df, alpha_columns)
+
+        date_columns = ['date_of_birth', 'join_date']
+        df = self.clean_dates(df, date_columns, future_dates_valid=False)
+
+        df['country_code'].replace('GGB', 'GB', inplace=True)
+        df = self.clean_categories(
+            df, ['country_code'], expected_categories=self.country_codes)
+
+        df = self.clean_phone_numbers(df, ['phone_number'])
+
+        df = self.clean_emails(df, ['email_address'])
+
+        non_null_columns = ['first_name', 'last_name']
         df.dropna(subset=non_null_columns, inplace=True)
 
         return df

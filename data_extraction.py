@@ -198,7 +198,6 @@ class DataExtractor:
 
 if __name__ == '__main__':
 
-    '''
     db_connector = DatabaseConnector()
     db_connector.init_db_engine()
 
@@ -208,15 +207,30 @@ if __name__ == '__main__':
 
     print('\n')
     url = 'https://data-handling-public.s3.eu-west-1.amazonaws.com/card_details.pdf'
-    card_details = DataExtractor.retrieve_pdf_data(url)
-    print(card_details.head())
-    '''
+    df = DataExtractor.retrieve_pdf_data(url)
+    print(df.head())
 
+    print('\n')
     url = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/number_stores'
     headers = {'x-api-key': 'yFBQbwXe9J3sd6zWVAMrK6lcxxr0q1lr2PT6DDMX'}
     num_stores = DataExtractor.list_number_of_stores(url, headers)
 
+    print('\n')
     url = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/{store_no}'
-    store_details = DataExtractor.retrieve_stores_data(
-        url, headers, num_stores)
-    print(store_details.head())
+    df = DataExtractor.retrieve_stores_data(url, headers, num_stores)
+    print(df.head())
+
+    print('\n')
+    url = 'https://aqj7u5id95.execute-api.eu-west-1.amazonaws.com/prod/store_details/{store_no}'
+    df = DataExtractor.retrieve_stores_data(url, headers, num_stores)
+    print(df.head())
+
+    print('\n')
+    s3_address = 's3://data-handling-public/products.csv'
+    df = DataExtractor.extract_from_s3(s3_address)
+    print(df.head())
+
+    print('\n')
+    url = 'https://data-handling-public.s3.eu-west-1.amazonaws.com/date_details.json'
+    df = DataExtractor.read_json(url)
+    print(df.head())
