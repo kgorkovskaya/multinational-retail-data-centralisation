@@ -3,11 +3,12 @@ AiCore Multinational Retail Data Centralisation Project
 Data cleaning
 
 Author: Kristina Gorkovskaya
-Date: 2023-05-06
+Date: 2023-05-08
 '''
 
 import numpy as np
 import pandas as pd
+import re
 from datetime import datetime
 from utils import time_it
 from warnings import filterwarnings
@@ -349,4 +350,54 @@ class DataCleaning:
             df[col] = df[col].astype(str)
             invalid_phone_no = df[col].str.replace(r'\D+', '').apply(len) < 7
             df.loc[invalid_phone_no, col] = np.nan
+        return df
+
+    @staticmethod
+    def convert_product_weights(df, columns):
+        '''Parse product weights and convert to kilograms.
+        The following valid formats have been observed:
+        999ml
+        999g
+        999kg
+        999.99ml
+        999.99g
+        999.99kg
+        99kg .
+        10 x 999.99ml
+        10 x 999.99g
+        10 x 999.99kg
+
+        Arguments:
+            df (Pandas DataFrame)
+            columns (list): column names for cleaning
+
+        Returns:
+            Pandas DataFrame
+        '''
+
+        regex_multiplier = r'([0-9]+)\s*x\s*[0-9]'
+        regex_weight_per_item = r'([0-9\.]+)\s*(?:g|kg|ml)\b'
+        regex_unit = r'(?:[0-9\.]+)\s*(g|kg|ml)\b'
+
+        conversions = {'kg': 1, 'g': 1/1000, 'ml': 1/1000}
+
+        for col in columns:
+
+            df['multiplier'] = df[col].str.extract(
+                regex_multiplier, re.IGNORECASE)
+            df.loc[df['multiplier'].isnull(), 'multiplier'] = 1
+            df['multiplier'] = df['multiplier'].astype(int)
+
+            df['weight_per_item'] = df[col].str.extract(
+                regex_weight_per_item, re.IGNORECASE).astype(float)
+
+            df['unit'] = df[col].str.extract(regex_unit, re.IGNORECASE)
+            df['unit'] = df['unit'].str.lower()
+
+            df[col] = df['weight_per_item'] * df['multiplier']
+            df[col] = df[col] * df['unit'].map(conversions)
+
+            df.drop(['multiplier', 'weight_per_item', 'unit'],
+                    axis=1, inplace=True)
+
         return df
