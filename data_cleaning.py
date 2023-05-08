@@ -43,6 +43,7 @@ def only_clean_nonempty_df(func):
                 if non_empty_df:
                     break
         if non_empty_df:
+            print('Cleaning data')
             result = func(*args, **kwargs)
             return result
         else:
@@ -329,8 +330,6 @@ class DataCleaning(DataCleaningGeneric):
             Pandas DataFrame
         '''
 
-        print('Cleaning date event data')
-
         numeric_columns = ['month', 'day', 'year']
         df = self.clean_numeric_cols(df, numeric_columns)
 
@@ -376,8 +375,6 @@ class DataCleaning(DataCleaningGeneric):
             Pandas DataFrame
         '''
 
-        print('Cleaning card data')
-
         df = self.clean_card_numbers(df, ['card_number'])
 
         df = self.clean_dates(df, ['expiry_date'], date_format='%m/%y')
@@ -408,7 +405,6 @@ class DataCleaning(DataCleaningGeneric):
             Pandas dataframe
         '''
 
-        print('Cleaning orders data')
         unwanted_columns = ['level_0', 'index', 'first_name', 'last_name', '1']
         for column in unwanted_columns:
             if column in df:
@@ -441,8 +437,6 @@ class DataCleaning(DataCleaningGeneric):
         Return:
             Pandas DataFrame
         '''
-
-        print('Cleaning product data')
 
         df = self.convert_product_weights(df, ['weight'])
 
@@ -482,8 +476,6 @@ class DataCleaning(DataCleaningGeneric):
         Return:
             Pandas DataFrame
         '''
-
-        print('Cleaning store details')
 
         # Input data has duplicate fields: lat and latitude
         # lat is redundant and not populated with valid data;
@@ -540,8 +532,6 @@ class DataCleaning(DataCleaningGeneric):
         Return:
             Pandas DataFrame
         '''
-
-        print('Cleaning user data')
 
         alpha_columns = ['first_name', 'last_name', 'country']
         df = self.clean_alpha_cols(df, alpha_columns)
