@@ -101,7 +101,7 @@ class DataExtractor:
         except Exception as err:
             print(f'Failed to get number of stores')
             print(f'{err.__class__.__name__}: {err}')
-            return 0
+            return pd.DataFrame()
 
     @staticmethod
     @time_it

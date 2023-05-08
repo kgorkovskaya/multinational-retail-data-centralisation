@@ -29,6 +29,28 @@ def standardize_nulls(func):
     return wrapper
 
 
+def only_clean_nonempty_df(func):
+    '''Decorator to only process non-empty dataframes;
+    DataExtractor methods return empty dataframes if the
+    data extraction fails; attempting to clean an empty df
+    will result in an error.'''
+
+    def wrapper(*args, **kwargs):
+        non_empty_df = False
+        for i in range(len(args)):
+            if isinstance(args[i], pd.core.frame.DataFrame):
+                non_empty_df = len(args[i]) > 0
+                if non_empty_df:
+                    break
+        if non_empty_df:
+            result = func(*args, **kwargs)
+            return result
+        else:
+            print('Cleaning not attempted; method requires a non-empty dataframe')
+            return pd.DataFrame()
+    return wrapper
+
+
 class DataCleaningGeneric:
     '''This class contains static methods for cleaning
     specific types of columns (e.g. numeric columns; dates;
@@ -290,6 +312,7 @@ class DataCleaning(DataCleaningGeneric):
         self.country_codes = ['DE', 'GB', 'US']
         self.time_periods = ['Evening', 'Morning', 'Midday', 'Late_Hours']
 
+    @only_clean_nonempty_df
     @time_it
     @standardize_nulls
     def clean_date_time_data(self, df):
@@ -332,6 +355,7 @@ class DataCleaning(DataCleaningGeneric):
             df[col] = df[col].astype(int)
         return df
 
+    @only_clean_nonempty_df
     @time_it
     @standardize_nulls
     def clean_card_data(self, df):
@@ -366,6 +390,7 @@ class DataCleaning(DataCleaningGeneric):
         df.dropna(subset=non_null_columns, inplace=True)
         return df
 
+    @only_clean_nonempty_df
     @time_it
     @standardize_nulls
     def clean_orders_data(self, df):
@@ -394,6 +419,7 @@ class DataCleaning(DataCleaningGeneric):
         df.dropna(axis=1, inplace=True)
         return df
 
+    @only_clean_nonempty_df
     @time_it
     @standardize_nulls
     def clean_products_data(self, df):
@@ -435,6 +461,7 @@ class DataCleaning(DataCleaningGeneric):
         df.dropna(inplace=True)
         return df
 
+    @only_clean_nonempty_df
     @time_it
     @standardize_nulls
     def clean_store_data(self, df):
@@ -491,6 +518,7 @@ class DataCleaning(DataCleaningGeneric):
 
         return df
 
+    @only_clean_nonempty_df
     @time_it
     @standardize_nulls
     def clean_user_data(self, df):
