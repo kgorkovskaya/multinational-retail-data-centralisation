@@ -8,9 +8,10 @@ Collate and analyse data from various sources, to create a centralised sales dat
 
 ## 2. Extract and clean source data
 
-- Load user details from PostgreSQL database hosted on AWS into a Pandas DataFrame. Clean the data; remove records where a valid name is not present. Load to __sales_data.dim_users__
-- Load credit card details from PDF file. Clean the data; remove records where valid card details are not present. Load to __sales_data.dim_card_details__
-- Load store details from API. Clean the data; remove invalid/null records. Load to __sales_data.dim_store_details__
-- Load product details from S3. Clean the data; remove invalid/null records. Load to __sales_data.dim_products__
+Extract data from various sources; load each dataset into a Pandas Dataframe; standardize; identify and remove invalid records; load each dataset to a table on a local PostgreSQL database.
+- User details and order details sourced from PostgreSQL database hosted on AWS; loaded to __sales_data.dim_users__ and __sales_data.orders_table__
+- Credit card details sourced from PDF file; loaded to __sales_data.dim_card_details__
+- Store details sourced from API; loaded to __sales_data.dim_store_details__
+- Product details sourced from S3; loaded to __sales_data.dim_products__
 
 
