@@ -296,8 +296,8 @@ class DataCleaningGeneric:
 class DataCleaning(DataCleaningGeneric):
     '''This class cleans the data in a Pandas dataframe.
     It is designed to work with specific datasets, and includes
-    methods for cleaning user data, card data, product data, and
-    store data. 
+    methods for cleaning user data, card data, date event data, 
+    product data, and store data. 
 
     Attributes:
         continents (list): valid continents
@@ -312,6 +312,39 @@ class DataCleaning(DataCleaningGeneric):
         self.continents = ['Europe', 'America']
         self.country_codes = ['DE', 'GB', 'US']
         self.time_periods = ['Evening', 'Morning', 'Midday', 'Late_Hours']
+
+    @only_clean_nonempty_df
+    @time_it
+    @standardize_nulls
+    def clean_card_data(self, df):
+        '''Clean credit card data: standardize card numbers and dates.
+
+        Valid card numbers are expected to have a card_number 
+        comprising at least 8 numeric digits; a valid expiry date;
+        and a valid date_payment_confirmed not in the future. 
+        Identify and drop invalid records.
+
+        Arguments:
+            df (Pandas dataframe): input data for cleaning.
+                Expected to contain the following fields:
+                card_number, expiry_date, card_provider,
+                date_payment_confirmed
+
+        Return:
+            Pandas DataFrame
+        '''
+
+        df = self.clean_card_numbers(df, ['card_number'])
+
+        df = self.clean_dates(df, ['expiry_date'], date_format='%m/%y')
+
+        df = self.clean_dates(df, ['date_payment_confirmed'],
+                              future_dates_valid=False)
+
+        non_null_columns = ['card_number',
+                            'date_payment_confirmed', 'expiry_date']
+        df.dropna(subset=non_null_columns, inplace=True)
+        return df
 
     @only_clean_nonempty_df
     @time_it
@@ -352,39 +385,6 @@ class DataCleaning(DataCleaningGeneric):
 
         for col in numeric_columns:
             df[col] = df[col].astype(int)
-        return df
-
-    @only_clean_nonempty_df
-    @time_it
-    @standardize_nulls
-    def clean_card_data(self, df):
-        '''Clean credit card data: standardize card numbers and dates.
-
-        Valid card numbers are expected to have a card_number 
-        comprising at least 8 numeric digits; a valid expiry date;
-        and a valid date_payment_confirmed not in the future. 
-        Identify and drop invalid records.
-
-        Arguments:
-            df (Pandas dataframe): input data for cleaning.
-                Expected to contain the following fields:
-                card_number, expiry_date, card_provider,
-                date_payment_confirmed
-
-        Return:
-            Pandas DataFrame
-        '''
-
-        df = self.clean_card_numbers(df, ['card_number'])
-
-        df = self.clean_dates(df, ['expiry_date'], date_format='%m/%y')
-
-        df = self.clean_dates(df, ['date_payment_confirmed'],
-                              future_dates_valid=False)
-
-        non_null_columns = ['card_number',
-                            'date_payment_confirmed', 'expiry_date']
-        df.dropna(subset=non_null_columns, inplace=True)
         return df
 
     @only_clean_nonempty_df
