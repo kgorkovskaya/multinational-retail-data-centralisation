@@ -483,21 +483,13 @@ class DataCleaning(DataCleaningGeneric):
         Arguments:
             df (Pandas dataframe): input data for cleaning.
                 Expected to contain the following fields:
-                index, address, longitude, latitude, locality,
+                index, address, longitude, lat, latitude, locality,
                 store_code, staff_numbers, opening_date, store_type,
                 country_code, continent
 
         Return:
             Pandas DataFrame
         '''
-
-        # Input data has duplicate fields: lat and latitude
-        # lat is redundant and not populated with valid data;
-        # therefore is dropped if more than 50% null
-
-        if 'lat' in df:
-            if sum(df['lat'].isnull()) / len(df) > 0.5:
-                df.drop('lat', axis=1, inplace=True)
 
         df = self.clean_dates(df, ['opening_date'])
 
@@ -516,7 +508,7 @@ class DataCleaning(DataCleaningGeneric):
         alpha_columns = ['store_type', 'locality']
         df = self.clean_alpha_cols(df, alpha_columns)
 
-        numeric_columns = ['latitude', 'longitude', 'staff_numbers']
+        numeric_columns = ['latitude', 'lat', 'longitude', 'staff_numbers']
         df = self.clean_numeric_cols(df, numeric_columns)
 
         non_null_columns = ['address', 'store_type', 'country_code']
