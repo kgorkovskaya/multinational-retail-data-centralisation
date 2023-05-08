@@ -368,6 +368,33 @@ class DataCleaning(DataCleaningGeneric):
 
     @time_it
     @standardize_nulls
+    def clean_orders_data(self, df):
+        ''' Clean orders data.
+        Replace spurious columns and invalid records.
+
+        Arguments:
+            df (Pandas dataframe): input data for cleaning.
+                Expected to contain the following fields:
+                level_0, index, date_uuid, first_name, last_name, user_uuid,
+                card_number, store_code, product_code, 1, product_quantity],
+
+        Return:
+            Pandas dataframe
+        '''
+
+        print('Cleaning orders data')
+        unwanted_columns = ['level_0', 'index', 'first_name', 'last_name', '1']
+        for column in unwanted_columns:
+            if column in df:
+                df.drop(column, axis=1, inplace=True)
+
+        df = self.clean_card_numbers(df, ['card_number'])
+        df = self.clean_numeric_cols(df, ['product_quantity'])
+        df.dropna(axis=1, inplace=True)
+        return df
+
+    @time_it
+    @standardize_nulls
     def clean_products_data(self, df):
         '''Clean product data.
 
