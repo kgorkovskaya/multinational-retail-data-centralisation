@@ -77,7 +77,6 @@ class DatabaseConnector:
             list of table names
         '''
 
-        print('Fetching table names')
         try:
             inspector = inspect(self.engine)
             table_names = inspector.get_table_names()
@@ -90,6 +89,7 @@ class DatabaseConnector:
     def print_db_tables(self):
         '''Pretty-print list of tables on database.
         '''
+        print(f'Tables in {engine.url.database}:')
         tables = self.list_db_tables()
         print('\t' + '\n\t'.join(sorted(tables)))
 
