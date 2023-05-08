@@ -15,7 +15,7 @@ class DatabaseConnector:
 
     Attributes:
         engine (Engine): SQLAlchemy Engine, connected to DB
-        file_name (str): YAML file containing connection details and
+        file_name (str): path to YAML file containing connection details and
             login credentials
     '''
 
