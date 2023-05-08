@@ -189,8 +189,8 @@ class DataCleaningGeneric:
         Arguments:
             df (Pandas DataFrame)
             columns (list): column names for cleaning
-            currency_code (str or regex): this will be stripped
-                before searching for non-numeric data.
+            currency_code (str or regex): this will be incorporated
+            into the regex for identifying valid records.
 
         Returns:
             Pandas DataFrame
@@ -199,12 +199,15 @@ class DataCleaningGeneric:
         for col in columns:
             df[col] = df[col].astype(str).str.strip()
 
+            validation_regex = r'^[0-9\.-]+$'
             if currency_code:
-                df[col] = df[col].str.replace(currency_code, '')
+                validation_regex = r'^' + currency_code + r'\s*[0-9\.-]+$'
 
-            df[col].replace({r'.*[^0-9\.-].*': np.nan},
-                            regex=True, inplace=True)
-            df[col] = df[col].astype(float)
+            is_valid = df[col].str.contains(validation_regex)
+            df.loc[~is_valid, col] = np.nan
+
+            if not currency_code:
+                df[col] = df[col].astype(float)
         return df
 
     @staticmethod
@@ -491,6 +494,9 @@ class DataCleaning(DataCleaningGeneric):
             Pandas DataFrame
         '''
 
+        unwanted_columns = ['level_0', 'index', '1']
+        df = self.drop_unwanted_columns(df, unwanted_columns)
+
         df = self.clean_dates(df, ['opening_date'])
 
         df = self.clean_categories(
@@ -511,7 +517,7 @@ class DataCleaning(DataCleaningGeneric):
         numeric_columns = ['latitude', 'lat', 'longitude', 'staff_numbers']
         df = self.clean_numeric_cols(df, numeric_columns)
 
-        non_null_columns = ['address', 'store_type', 'country_code']
+        non_null_columns = ['store_code', 'store_type', 'country_code']
         df.dropna(subset=non_null_columns, inplace=True)
 
         return df
