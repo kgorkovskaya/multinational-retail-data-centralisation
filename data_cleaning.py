@@ -16,206 +16,26 @@ filterwarnings(
     'ignore', 'The default value of regex will change from True to False in a future version.')
 
 
-class DataCleaning:
-    '''This class cleans the data in a Pandas dataframe.
-    Includes methods for cleaning user data, card data, store data; 
-    and static methods for cleaning specific types of columns.
-
-    Attributes:
-        continents (list): valid continents
-        country_codes (list): valid country codes
+def standardize_nulls(func):
+    '''Decorator to Standardize nulls in Pandas DataFrame; replace "NULL" with NaN.
     '''
+    def wrapper(*args, **kwargs):
+        for i in range(len(args)):
+            if isinstance(args[i], pd.core.frame.DataFrame):
+                args[i].replace([r'^NULL$', '^N/A$'], np.nan,
+                                regex=True, inplace=True)
+        result = func(*args, **kwargs)
+        return result
+    return wrapper
 
-    def __init__(self):
-        '''See help(DataCleaning) for accurate signature.'''
 
-        self.continents = ['Europe', 'America']
-        self.country_codes = ['DE', 'GB', 'US']
-
-    @staticmethod
-    def standardize_nulls(func):
-        '''Decorator to Standardize nulls in Pandas DataFrame; replace "NULL" with NaN.
-        '''
-        def wrapper(*args, **kwargs):
-            for i in range(len(args)):
-                if isinstance(args[i], pd.core.frame.DataFrame):
-                    args[i].replace([r'^NULL$', '^N/A$'],
-                                    np.nan, regex=True, inplace=True)
-            result = func(*args, **kwargs)
-            return result
-        return wrapper
-
-    @time_it
-    @standardize_nulls
-    def clean_user_data(self, df):
-        '''Clean user data (names, birthdates, contact details).
-
-        (1) Standardize nulls; replace the string "NULL" with NaN.
-        (2) Clean name and country fields; any records containing
-            numerals are treated as invalid and replaced with NaN. 
-        (3) Valid users are expected to have a complete first_name 
-            and last_name; drop rows without valid names.
-        (4) Clean dates, country codes, phone numbers, email addresses.
-            Identify invalid values; replace with NaN.
-
-        Arguments:
-            df (Pandas dataframe): input data for cleaning.
-                Expected to contain the following fields:
-                first_name, last_name, country, date_of_birth, 
-                join_date, phone_number, email_address
-
-        Return:
-            Pandas DataFrame
-        '''
-
-        print('Cleaning user data')
-
-        alpha_columns = ['first_name', 'last_name', 'country']
-        df = self.clean_alpha_cols(df, alpha_columns)
-
-        date_columns = ['date_of_birth', 'join_date']
-        df = self.clean_dates(df, date_columns, future_dates_valid=False)
-
-        df['country_code'].replace('GGB', 'GB', inplace=True)
-        df = self.clean_categories(
-            df, ['country_code'], expected_categories=self.country_codes)
-
-        df = self.clean_phone_numbers(df, ['phone_number'])
-
-        df = self.clean_emails(df, ['email_address'])
-
-        non_null_columns = ['first_name', 'last_name']
-        df.dropna(subset=non_null_columns, inplace=True)
-
-        return df
-
-    @time_it
-    @standardize_nulls
-    def clean_card_data(self, df):
-        '''Clean card data: card numbers and dates.
-
-        Valid card numbers are expected to have a card_number 
-        comprising at least 8 numeric digits; a valid expiry date;
-        and a valid date_payment_confirmed not in the future. 
-        Identify and drop invalid records.
-
-        Arguments:
-            df (Pandas dataframe): input data for cleaning.
-                Expected to contain the following fields:
-                card_number, expiry_date, card_provider,
-                date_payment_confirmed
-
-        Return:
-            Pandas DataFrame
-        '''
-
-        print('Cleaning card data')
-
-        df = self.clean_card_numbers(df, ['card_number'])
-
-        df = self.clean_dates(df, ['expiry_date'], date_format='%m/%y')
-
-        df = self.clean_dates(df, ['date_payment_confirmed'],
-                              future_dates_valid=False)
-
-        non_null_columns = ['card_number',
-                            'date_payment_confirmed', 'expiry_date']
-        df.dropna(subset=non_null_columns, inplace=True)
-        return df
-
-    @time_it
-    @standardize_nulls
-    def clean_products_data(self, df):
-        '''Clean product data.
-
-        Convert product weights to kilograms; convert product price
-        to float; standardize dates; replace invalid categories with NaN, 
-        fix typo in removed column.
-
-        Identify and drop invalid records (a product record is expected
-        to be 100 % complete).
-
-        Arguments:
-            df (Pandas dataframe): input data for cleaning.
-                Expected to contain the following fields:
-                product_name, product_price, weight, category,
-                EAN, date_added, uuid, removed, product_code
-
-        Return:
-            Pandas DataFrame
-        '''
-
-        print('Cleaning product data')
-
-        df = self.convert_product_weights(df, ['weight'])
-
-        df = self.clean_numeric_cols(df, ['product_price'], currency_code='£')
-
-        df = self.clean_dates(df, ['date_added'])
-
-        product_categories = ['diy', 'food-and-drink', 'health-and-beauty',
-                              'homeware', 'pets', 'sports-and-leisure',
-                              'toys-and-games']
-        df = self.clean_categories(df, ['category'], product_categories)
-
-        df['removed'].replace(
-            'Still_avaliable', 'Still_available', inplace=True)
-
-        df.dropna(inplace=True)
-        return df
-
-    @time_it
-    @standardize_nulls
-    def clean_store_data(self, df):
-        '''Clean store data.
-        Identify and drop invalid records (a store is expected
-        to have a store code, store_type, and country code)
-
-        Arguments:
-            df (Pandas dataframe): input data for cleaning.
-                Expected to contain the following fields:
-                index, address, longitude, latitude, locality,
-                store_code, staff_numbers, opening_date, store_type,
-                country_code, continent
-
-        Return:
-            Pandas DataFrame
-        '''
-
-        print('Cleaning store details')
-
-        # Input data has duplicate fields: lat and latitude
-        # lat is redundant and not populated with valid data;
-        # therefore is dropped if more than 50% null
-
-        if 'lat' in df:
-            if sum(df['lat'].isnull()) / len(df) > 0.5:
-                df.drop('lat', axis=1, inplace=True)
-
-        df = self.clean_dates(df, ['opening_date'])
-
-        df = self.clean_categories(
-            df, ['country_code'], expected_categories=self.country_codes)
-
-        # Some continents have been incorrectly entered
-        # with an "ee" prefix ("eeAmerica", "eeEurope");
-        # fix the typos before calling clean_categories
-
-        df['continent'] = df['continent'].astype(str)
-        df['continent'] = df['continent'].str.replace(r'^ee', '')
-        df['continent'] = df['continent'].str.capitalize()
-        df = self.clean_categories(df, ['continent'], self.continents)
-
-        alpha_columns = ['store_type', 'locality']
-        df = self.clean_alpha_cols(df, alpha_columns)
-
-        numeric_columns = ['latitude', 'longitude', 'staff_numbers']
-        df = self.clean_numeric_cols(df, numeric_columns)
-
-        non_null_columns = ['address', 'store_type', 'country_code']
-        df.dropna(subset=non_null_columns, inplace=True)
-
-        return df
+class DataCleaningGeneric:
+    '''This class contains static methods for cleaning
+    specific types of columns (e.g. numeric columns; dates;
+    phone numbers; email addresses; etc.). These methods standardize 
+    valid data, identify invalid records, and replace invalid
+    records with NaN.
+    '''
 
     @staticmethod
     def clean_alpha_cols(df, columns):
@@ -446,5 +266,196 @@ class DataCleaning:
 
             df.drop(['multiplier', 'weight_per_item', 'unit'],
                     axis=1, inplace=True)
+
+        return df
+
+
+class DataCleaning(DataCleaningGeneric):
+    '''This class cleans the data in a Pandas dataframe.
+    It is designed to work with specific datasets, and includes
+    methods for cleaning user data, card data, product data, and
+    store data. 
+
+    Attributes:
+        continents (list): valid continents
+        country_codes (list): valid country codes
+    '''
+
+    def __init__(self):
+        '''See help(DataCleaning) for accurate signature.'''
+
+        super().__init__()
+        self.continents = ['Europe', 'America']
+        self.country_codes = ['DE', 'GB', 'US']
+
+    @time_it
+    @standardize_nulls
+    def clean_user_data(self, df):
+        '''Clean user data (names, birthdates, contact details).
+
+        (1) Standardize nulls; replace the string "NULL" with NaN.
+        (2) Clean name and country fields; any records containing
+            numerals are treated as invalid and replaced with NaN. 
+        (3) Valid users are expected to have a complete first_name 
+            and last_name; drop rows without valid names.
+        (4) Clean dates, country codes, phone numbers, email addresses.
+            Identify invalid values; replace with NaN.
+
+        Arguments:
+            df (Pandas dataframe): input data for cleaning.
+                Expected to contain the following fields:
+                first_name, last_name, country, date_of_birth, 
+                join_date, phone_number, email_address
+
+        Return:
+            Pandas DataFrame
+        '''
+
+        print('Cleaning user data')
+
+        alpha_columns = ['first_name', 'last_name', 'country']
+        df = self.clean_alpha_cols(df, alpha_columns)
+
+        date_columns = ['date_of_birth', 'join_date']
+        df = self.clean_dates(df, date_columns, future_dates_valid=False)
+
+        df['country_code'].replace('GGB', 'GB', inplace=True)
+        df = self.clean_categories(
+            df, ['country_code'], expected_categories=self.country_codes)
+
+        df = self.clean_phone_numbers(df, ['phone_number'])
+
+        df = self.clean_emails(df, ['email_address'])
+
+        non_null_columns = ['first_name', 'last_name']
+        df.dropna(subset=non_null_columns, inplace=True)
+
+        return df
+
+    @time_it
+    @standardize_nulls
+    def clean_card_data(self, df):
+        '''Clean card data: card numbers and dates.
+
+        Valid card numbers are expected to have a card_number 
+        comprising at least 8 numeric digits; a valid expiry date;
+        and a valid date_payment_confirmed not in the future. 
+        Identify and drop invalid records.
+
+        Arguments:
+            df (Pandas dataframe): input data for cleaning.
+                Expected to contain the following fields:
+                card_number, expiry_date, card_provider,
+                date_payment_confirmed
+
+        Return:
+            Pandas DataFrame
+        '''
+
+        print('Cleaning card data')
+
+        df = self.clean_card_numbers(df, ['card_number'])
+
+        df = self.clean_dates(df, ['expiry_date'], date_format='%m/%y')
+
+        df = self.clean_dates(df, ['date_payment_confirmed'],
+                              future_dates_valid=False)
+
+        non_null_columns = ['card_number',
+                            'date_payment_confirmed', 'expiry_date']
+        df.dropna(subset=non_null_columns, inplace=True)
+        return df
+
+    @time_it
+    @standardize_nulls
+    def clean_products_data(self, df):
+        '''Clean product data.
+
+        Convert product weights to kilograms; convert product price
+        to float; standardize dates; replace invalid categories with NaN, 
+        fix typo in removed column.
+
+        Identify and drop invalid records (a product record is expected
+        to be 100 % complete).
+
+        Arguments:
+            df (Pandas dataframe): input data for cleaning.
+                Expected to contain the following fields:
+                product_name, product_price, weight, category,
+                EAN, date_added, uuid, removed, product_code
+
+        Return:
+            Pandas DataFrame
+        '''
+
+        print('Cleaning product data')
+
+        df = self.convert_product_weights(df, ['weight'])
+
+        df = self.clean_numeric_cols(df, ['product_price'], currency_code='£')
+
+        df = self.clean_dates(df, ['date_added'])
+
+        product_categories = ['diy', 'food-and-drink', 'health-and-beauty',
+                              'homeware', 'pets', 'sports-and-leisure',
+                              'toys-and-games']
+        df = self.clean_categories(df, ['category'], product_categories)
+
+        df['removed'].replace(
+            'Still_avaliable', 'Still_available', inplace=True)
+
+        df.dropna(inplace=True)
+        return df
+
+    @time_it
+    @standardize_nulls
+    def clean_store_data(self, df):
+        '''Clean store data.
+        Identify and drop invalid records (a store is expected
+        to have a store code, store_type, and country code)
+
+        Arguments:
+            df (Pandas dataframe): input data for cleaning.
+                Expected to contain the following fields:
+                index, address, longitude, latitude, locality,
+                store_code, staff_numbers, opening_date, store_type,
+                country_code, continent
+
+        Return:
+            Pandas DataFrame
+        '''
+
+        print('Cleaning store details')
+
+        # Input data has duplicate fields: lat and latitude
+        # lat is redundant and not populated with valid data;
+        # therefore is dropped if more than 50% null
+
+        if 'lat' in df:
+            if sum(df['lat'].isnull()) / len(df) > 0.5:
+                df.drop('lat', axis=1, inplace=True)
+
+        df = self.clean_dates(df, ['opening_date'])
+
+        df = self.clean_categories(
+            df, ['country_code'], expected_categories=self.country_codes)
+
+        # Some continents have been incorrectly entered
+        # with an "ee" prefix ("eeAmerica", "eeEurope");
+        # fix the typos before calling clean_categories
+
+        df['continent'] = df['continent'].astype(str)
+        df['continent'] = df['continent'].str.replace(r'^ee', '')
+        df['continent'] = df['continent'].str.capitalize()
+        df = self.clean_categories(df, ['continent'], self.continents)
+
+        alpha_columns = ['store_type', 'locality']
+        df = self.clean_alpha_cols(df, alpha_columns)
+
+        numeric_columns = ['latitude', 'longitude', 'staff_numbers']
+        df = self.clean_numeric_cols(df, numeric_columns)
+
+        non_null_columns = ['address', 'store_type', 'country_code']
+        df.dropna(subset=non_null_columns, inplace=True)
 
         return df
