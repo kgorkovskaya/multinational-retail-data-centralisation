@@ -10,6 +10,15 @@ import pandas as pd
 from time import time
 
 
+def print_newline(func):
+    '''Decorator which prints line break before executing a function'''
+
+    def wrapper(*args, **kwargs):
+        print('\n')
+        return func(*args, **kwargs)
+    return wrapper
+
+
 def time_it(func):
     '''Function decorator. Times the execution, and prints the number of 
     records returned (if function returns a dataframe)'''

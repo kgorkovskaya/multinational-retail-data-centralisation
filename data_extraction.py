@@ -14,16 +14,7 @@ import requests
 import tabula
 from database_utils import DatabaseConnector
 from sqlalchemy import text
-from utils import time_it
-
-
-def print_newline(func):
-    '''Decorator which prints line break before executing a function'''
-
-    def wrapper(*args, **kwargs):
-        print('\n')
-        return func(*args, **kwargs)
-    return wrapper
+from utils import print_newline, time_it
 
 
 class DataExtractor:
