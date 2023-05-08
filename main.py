@@ -48,3 +48,7 @@ if __name__ == '__main__':
     store_details = DataCleaning().clean_store_data(store_details)
     db_connector_local.upload_to_db(store_details, 'dim_store_details')
     db_connector_local.print_db_tables()
+
+    # Clean and load address data
+    s3_address = 's3://data-handling-public/products.csv'
+    df = DataExtractor.extract_from_s3(s3_address)

@@ -6,8 +6,10 @@ Author: Kristina Gorkovskaya
 Date: 2023-05-07
 '''
 
-
+import boto3
+import io
 import pandas as pd
+import re
 import requests
 import tabula
 from database_utils import DatabaseConnector
@@ -39,8 +41,8 @@ class DataExtractor:
             Pandas DataFrame
         '''
 
-        print(f'Reading database table {table_name}')
         try:
+            print('Reading database table ' + table_name)
             query = f"SELECT * from {table_name};"
             with db_connector.engine.connect() as con:
                 df = pd.read_sql_query(sql=text(query), con=con)
@@ -63,8 +65,8 @@ class DataExtractor:
             Pandas DataFrame
         '''
 
-        print(f'Reading PDF data from url: {url}')
         try:
+            print('Reading PDF data from url: ' + url)
             df = tabula.read_pdf(url, pages='all')
             df = pd.concat(df).reset_index(drop=True)
             return df
@@ -86,8 +88,8 @@ class DataExtractor:
             int: number of stores
         '''
 
-        print('Getting number of stores from API: ' + url)
         try:
+            print('Getting number of stores from API: ' + url)
             r = requests.get(url, headers=headers)
             assert r.status_code == 200, f'Request failed with status {r.status_code}'
             num_stores = r.json()['number_stores']
@@ -112,8 +114,8 @@ class DataExtractor:
             Pandas DataFrame
         '''
 
-        print('Retrieving store details from API: ' + endpoint)
         try:
+            print('Retrieving store details from API: ' + endpoint)
             store_data = []
             for store_no in range(num_stores):
                 url = endpoint.format(store_no=store_no)
@@ -130,7 +132,30 @@ class DataExtractor:
     @staticmethod
     @time_it
     def extract_from_s3(address):
-        pass
+        '''Download CSV data from S3 bucket; create Pandas DataFrame.
+
+        Read data directly into a DataFrame without downloading the file locally.
+
+        Arguments:
+            address (string): full path to file on S3
+
+        Returns:
+            Pandas DataFrame
+        '''
+
+        try:
+            print('Downloading file from S3: ' + address)
+            s3_client = boto3.client('s3')
+            address_split = re.split(r'/+', address)
+            bucket = address_split[1]
+            key = address_split[-1]
+            obj = s3_client.get_object(Bucket=bucket, Key=key)
+            df = pd.read_csv(io.BytesIO(obj['Body'].read()))
+            return df
+        except Exception as err:
+            print(f'Failed to retrieve store details')
+            print(f'{err.__class__.__name__}: {err}')
+            return pd.DataFrame()
 
 
 if __name__ == '__main__':
