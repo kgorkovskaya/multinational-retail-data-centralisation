@@ -31,7 +31,21 @@ class DataCleaning:
         self.continents = ['Europe', 'America']
         self.country_codes = ['DE', 'GB', 'US']
 
+    @staticmethod
+    def standardize_nulls(func):
+        '''Decorator to Standardize nulls in Pandas DataFrame; replace "NULL" with NaN.
+        '''
+        def wrapper(*args, **kwargs):
+            for i in range(len(args)):
+                if isinstance(args[i], pd.core.frame.DataFrame):
+                    args[i].replace([r'^NULL$', '^N/A$'],
+                                    np.nan, regex=True, inplace=True)
+            result = func(*args, **kwargs)
+            return result
+        return wrapper
+
     @time_it
+    @standardize_nulls
     def clean_user_data(self, df):
         '''Clean user data (names, birthdates, contact details).
 
@@ -55,8 +69,6 @@ class DataCleaning:
 
         print('Cleaning user data')
 
-        df = self.standardize_nulls(df)
-
         alpha_columns = ['first_name', 'last_name', 'country']
         df = self.clean_alpha_cols(df, alpha_columns)
 
@@ -77,6 +89,7 @@ class DataCleaning:
         return df
 
     @time_it
+    @standardize_nulls
     def clean_card_data(self, df):
         '''Clean card data: card numbers and dates.
 
@@ -97,8 +110,6 @@ class DataCleaning:
 
         print('Cleaning card data')
 
-        df = self.standardize_nulls(df)
-
         df = self.clean_card_numbers(df, ['card_number'])
 
         df = self.clean_dates(df, ['expiry_date'], date_format='%m/%y')
@@ -112,6 +123,7 @@ class DataCleaning:
         return df
 
     @time_it
+    @standardize_nulls
     def clean_store_data(self, df):
         '''Clean store data.
         Identify and drop invalid records (a store is expected
@@ -129,8 +141,6 @@ class DataCleaning:
         '''
 
         print('Cleaning store details')
-
-        df = self.standardize_nulls(df)
 
         # Input data has duplicate fields: lat and latitude
         # lat is redundant and not populated with valid data;
@@ -163,20 +173,6 @@ class DataCleaning:
         non_null_columns = ['address', 'store_type', 'country_code']
         df.dropna(subset=non_null_columns, inplace=True)
 
-        return df
-
-    @staticmethod
-    def standardize_nulls(df):
-        '''Standardize nulls in Pandas DataFrame; replace "NULL" with NaN.
-
-        Arguments:
-            df (Pandas DataFrame)
-
-        Returns:
-            Pandas DataFrame
-        '''
-
-        df.replace([r'^NULL$', '^N/A$'], np.nan, regex=True, inplace=True)
         return df
 
     @staticmethod

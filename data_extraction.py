@@ -127,6 +127,11 @@ class DataExtractor:
             print(f'{err.__class__.__name__}: {err}')
             return pd.DataFrame()
 
+    @staticmethod
+    @time_it
+    def extract_from_s3(address):
+        pass
+
 
 if __name__ == '__main__':
 
