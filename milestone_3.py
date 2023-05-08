@@ -70,8 +70,10 @@ def get_data_type(engine, column_name, table_name):
     data_types = {'card_number': varchar,
                   'continent': varchar,
                   'country_code': varchar,
+                  'date_added': 'DATE',
                   'date_of_birth': 'DATE',
                   'date_uuid': uuid,
+                  'EAN': varchar,
                   'first_name': varchar,
                   'join_date': 'DATE',
                   'last_name': varchar,
@@ -80,11 +82,16 @@ def get_data_type(engine, column_name, table_name):
                   'longitude': 'FLOAT',
                   'opening_date': 'DATE',
                   'product_code': varchar,
+                  'product_price': 'FLOAT',
                   'product_quantity': 'SMALLINT',
                   'staff_numbers': 'SMALLINT',
+                  'still_available': 'BOOL',
                   'store_code': varchar,
                   'store_type': varchar,
                   'user_uuid': uuid,
+                  'uuid': uuid,
+                  'weight': 'FLOAT',
+                  'weight_class': varchar
                   }
 
     data_type = data_types.get(column_name, varchar)
@@ -194,7 +201,7 @@ if __name__ == '__main__':
     db_connector.init_db_engine()
     engine = db_connector.engine
 
-    tables = ['orders_table', 'dim_users', 'dim_store_details']
+    tables = ['orders_table', 'dim_users', 'dim_store_details', 'dim_products']
 
     for table_name in tables:
         print('\nUpdating data types for table: ' + table_name)
