@@ -125,6 +125,45 @@ class DataCleaning:
 
     @time_it
     @standardize_nulls
+    def clean_products_data(self, df):
+        '''Clean product data.
+
+        Convert product weights to kilograms; convert product price
+        to float; standardize dates; replace invalid categories with NaN, 
+        fix typo in removed column.
+
+        Identify and drop invalid records (a product record is expected
+        to be 100 % complete).
+
+        Arguments:
+            df (Pandas dataframe): input data for cleaning.
+                Expected to contain the following fields:
+                product_name, product_price, weight, category,
+                EAN, date_added, uuid, removed, product_code
+
+        Return:
+            Pandas DataFrame
+        '''
+
+        df = self.convert_product_weights(df, ['weight'])
+
+        df = self.clean_numeric_cols(df, ['product_price'], currency_code='£')
+
+        df = self.clean_dates(df, ['date_added'])
+
+        product_categories = ['diy', 'food-and-drink', 'health-and-beauty',
+                              'homeware', 'pets', 'sports-and-leisure',
+                              'toys-and-games']
+        df = self.clean_categories(df, ['category'], product_categories)
+
+        df['removed'].replace(
+            'Still_avaliable', 'Still_available', inplace=True)
+
+        df.dropna(inplace=True)
+        return df
+
+    @time_it
+    @standardize_nulls
     def clean_store_data(self, df):
         '''Clean store data.
         Identify and drop invalid records (a store is expected
@@ -296,7 +335,7 @@ class DataCleaning:
         return df
 
     @staticmethod
-    def clean_numeric_cols(df, columns):
+    def clean_numeric_cols(df, columns, currency_code=None):
         '''Some fields are expected to be numeric.
         These might be stored as ints, floats, or strings.
         Identify invalid records (records containing characters
@@ -305,6 +344,8 @@ class DataCleaning:
         Arguments:
             df (Pandas DataFrame)
             columns (list): column names for cleaning
+            currency_code (str or regex): this will be stripped
+                before searching for non-numeric data.
 
         Returns:
             Pandas DataFrame
@@ -312,6 +353,10 @@ class DataCleaning:
 
         for col in columns:
             df[col] = df[col].astype(str).str.strip()
+
+            if currency_code:
+                df[col] = df[col].str.replace(currency_code, '')
+
             df[col].replace({r'.*[^0-9\.-].*': np.nan},
                             regex=True, inplace=True)
             df[col] = df[col].astype(float)
