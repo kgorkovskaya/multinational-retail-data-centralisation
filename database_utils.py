@@ -95,7 +95,6 @@ class DatabaseConnector:
 
     def upload_to_db(self, df, table_name, if_exists='replace'):
         '''Upload Pandas dataframe to a table in the database.
-        If table exists, replace it.
 
         Arguments:
             df (Pandas Dataframe): data to upload
