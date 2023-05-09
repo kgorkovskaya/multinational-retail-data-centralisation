@@ -67,6 +67,9 @@ def get_data_type(engine, column_name, table_name):
     '''
     varchar = 'VARCHAR({})'
     uuid = 'UUID USING {}::uuid'
+    bool_type = 'BOOL USING {}::boolean'
+    float_type = 'FLOAT USING {}::double precision'
+
     data_types = {'card_number': varchar,
                   'continent': varchar,
                   'country_code': varchar,
@@ -77,38 +80,44 @@ def get_data_type(engine, column_name, table_name):
                   'first_name': varchar,
                   'join_date': 'DATE',
                   'last_name': varchar,
-                  'latitude': 'FLOAT',
+                  'latitude': float_type,
                   'locality': varchar,
-                  'longitude': 'FLOAT',
+                  'longitude': float_type,
                   'opening_date': 'DATE',
                   'product_code': varchar,
-                  'product_price': 'FLOAT',
+                  'product_price': float_type,
                   'product_quantity': 'SMALLINT',
                   'staff_numbers': 'SMALLINT',
-                  'still_available': 'BOOL',
+                  'still_available': bool_type,
                   'store_code': varchar,
                   'store_type': varchar,
                   'user_uuid': uuid,
                   'uuid': uuid,
-                  'weight': 'FLOAT',
+                  'weight': float_type,
                   'weight_class': varchar
                   }
 
     data_type = data_types.get(column_name, varchar)
     if 'VARCHAR' in data_type:
+
+        # Set max varchar length of field to 255, or max length of value
         if column_name in ['first_name', 'last_name', 'locality', 'continent', 'store_type']:
             max_len = 255
         else:
             max_len = get_max_length(engine, column_name, table_name)
         data_type = data_type.format(max_len)
+
+        # store_type column is nullable
         if column_name == 'store_type':
             data_type += f';\nALTER TABLE {table_name} ALTER COLUMN {column_name} DROP NOT NULL'
+
         return data_type.format(max_len)
+
     return data_type.format(column_name)
 
 
 @time_it
-def alter_table(engine, column_name, table_name, data_type):
+def change_data_types(engine, column_name, table_name, data_type):
     '''Alter column type.
 
     Arguments:
@@ -175,23 +184,44 @@ def update_table(engine, table_name, column_names):
                 END
             );'''
 
+    sql_5 = '''
+    ALTER TABLE dim_products
+    RENAME COLUMN removed TO still_available;
+    UPDATE dim_products
+    SET still_available = (
+	    CASE 
+		    WHEN LOWER(TRIM(still_available)) = 'still_available' THEN True
+		    ELSE False
+	    END
+	    );
+    '''
+
     if table_name == 'dim_store_details':
-        with engine.connect() as con:
-            if 'lat' in column_names:
-                print('Updating latitude')
+        if 'lat' in column_names:
+            print('Updating latitude')
+            with engine.connect() as con:
                 con.execute(text(sql_1))
                 column_names.remove('lat')
-            print('Updating null addresses')
+        print('Updating null addresses')
+        with engine.connect() as con:
             con.execute(text(sql_2))
 
-    if table_name == 'dim_products' and 'weight_class' not in column_names:
-        with engine.connect() as con:
-            if 'product_price' in column_names:
-                print('Updating product_price')
+    if table_name == 'dim_products':
+        if 'product_price' in column_names:
+            print('Updating product_price')
+            with engine.connect() as con:
                 con.execute(text(sql_3))
-            if 'weight_class' not in column_names:
-                print('Populating weight_class')
+        if 'weight_class' not in column_names:
+            print('Populating weight_class')
+            with engine.connect() as con:
                 con.execute(text(sql_4))
+            column_names.append('weight_class')
+        if 'removed' in column_names:
+            print('Populating still_available')
+            with engine.connect() as con:
+                con.execute(text(sql_5))
+            column_names.remove('removed')
+            column_names.append('still_available')
 
     return column_names
 
@@ -212,4 +242,4 @@ if __name__ == '__main__':
 
         for column in column_names:
             data_type = get_data_type(engine, column, table_name)
-            alter_table(engine, column, table_name, data_type)
+            change_data_types(engine, column, table_name, data_type)

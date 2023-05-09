@@ -29,6 +29,20 @@ def standardize_nulls(func):
     return wrapper
 
 
+def drop_unwanted_columns(func):
+    '''Decorator to drop unwanted columns in Pandas dataframe'''
+
+    def wrapper(*args, **kwargs):
+        unwanted_columns = ['index', 'Unnamed: 0', 'level_0', '1']
+        for i in range(len(args)):
+            if isinstance(args[i], pd.core.frame.DataFrame):
+                cols = [c for c in args[i].columns if c in unwanted_columns]
+                args[i].drop(cols, axis=1, inplace=True)
+        result = func(*args, **kwargs)
+        return result
+    return wrapper
+
+
 def only_clean_nonempty_df(func):
     '''Decorator to only process non-empty dataframes;
     DataExtractor methods return empty dataframes if the
@@ -295,22 +309,6 @@ class DataCleaningGeneric:
 
         return df
 
-    @staticmethod
-    def drop_unwanted_columns(df, unwanted_columns=[]):
-        '''Drop spurious/unwanted columns from dataframe.
-
-        Arguments:
-            df (Pandas DataFrame)
-            unwanted_columns (list): column names to be dropped
-
-        Returns:
-            Pandas DataFrame
-        '''
-        for column in unwanted_columns:
-            if column in df:
-                df.drop(column, axis=1, inplace=True)
-        return df
-
 
 class DataCleaning(DataCleaningGeneric):
     '''This class cleans the data in a Pandas dataframe.
@@ -335,6 +333,7 @@ class DataCleaning(DataCleaningGeneric):
     @only_clean_nonempty_df
     @time_it
     @standardize_nulls
+    @drop_unwanted_columns
     def clean_card_data(self, df):
         '''Clean credit card data: standardize card numbers and dates.
 
@@ -368,6 +367,7 @@ class DataCleaning(DataCleaningGeneric):
     @only_clean_nonempty_df
     @time_it
     @standardize_nulls
+    @drop_unwanted_columns
     def clean_date_time_data(self, df):
         '''Clean date time data. Identify invalid day, month,
         year, timestamp, and ptime period values; drop 
@@ -409,6 +409,7 @@ class DataCleaning(DataCleaningGeneric):
     @only_clean_nonempty_df
     @time_it
     @standardize_nulls
+    @drop_unwanted_columns
     def clean_orders_data(self, df):
         ''' Clean orders data. 
         Drop spurious columns. Standardize card number and product
@@ -424,9 +425,7 @@ class DataCleaning(DataCleaningGeneric):
             Pandas dataframe
         '''
 
-        unwanted_columns = ['level_0', 'index', 'first_name', 'last_name', '1']
-        df = self.drop_unwanted_columns(df, unwanted_columns)
-
+        df.drop(['first_name', 'last_name'], axis=1, inplace=True)
         df = self.clean_card_numbers(df, ['card_number'])
         df = self.clean_numeric_cols(df, ['product_quantity'])
         df.dropna(axis=1, inplace=True)
@@ -435,6 +434,7 @@ class DataCleaning(DataCleaningGeneric):
     @only_clean_nonempty_df
     @time_it
     @standardize_nulls
+    @drop_unwanted_columns
     def clean_products_data(self, df):
         '''Clean product data.
 
@@ -475,6 +475,7 @@ class DataCleaning(DataCleaningGeneric):
     @only_clean_nonempty_df
     @time_it
     @standardize_nulls
+    @drop_unwanted_columns
     def clean_store_data(self, df):
         '''Clean store data. Standardize dates, country codes,
         continents, numeric columns (latitude, longitude, staff numbers)
@@ -493,9 +494,6 @@ class DataCleaning(DataCleaningGeneric):
         Return:
             Pandas DataFrame
         '''
-
-        unwanted_columns = ['level_0', 'index', '1']
-        df = self.drop_unwanted_columns(df, unwanted_columns)
 
         df = self.clean_dates(df, ['opening_date'])
 
@@ -525,6 +523,7 @@ class DataCleaning(DataCleaningGeneric):
     @only_clean_nonempty_df
     @time_it
     @standardize_nulls
+    @drop_unwanted_columns
     def clean_user_data(self, df):
         '''Clean user data.
 
@@ -544,9 +543,6 @@ class DataCleaning(DataCleaningGeneric):
         Return:
             Pandas DataFrame
         '''
-
-        unwanted_columns = ['level_0', 'index', '1']
-        df = self.drop_unwanted_columns(df, unwanted_columns)
 
         alpha_columns = ['first_name', 'last_name', 'country']
         df = self.clean_alpha_cols(df, alpha_columns)
