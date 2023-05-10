@@ -20,13 +20,33 @@ from utils import time_it
 
 
 @time_it
-def change_data_type(engine, column, table_name, data_type):
+def add_primary_key(engine, table_name, *columns):
+    '''Set primary key in table to the specified column(s).
+
+    Arguments:
+        engine (SQLAlchemy engine)
+        table_name (string)
+        columns (strings): column names
+
+    Returns:
+        None
+    '''
+
+    columns = ', '.join(columns)
+    sql = f'ALTER TABLE {table_name} ADD PRIMARY KEY ({columns});'
+    print('Executing SQL: ' + sql)
+    with engine.connect() as con:
+        con.execute(text(sql))
+
+
+@time_it
+def change_data_type(engine, table_name, column, data_type):
     '''Change data type for the specified column.
 
     Arguments:
         engine (SQLAlchemy engine)
         table_name (string)
-        column_name (string)
+        column (string)
         data_type (string)
 
     Returns:
@@ -57,12 +77,10 @@ def get_column_names(engine, table_name):
         for i, col in enumerate(column_names):
             if re.search(r'[^a-z0-9_]', col):
                 column_names[i] = '"' + col + '"'
-
-        print('Column names: ' + ', '.join(column_names))
         return column_names
 
 
-def get_data_type(engine, column_name, table_name):
+def get_data_type(engine, table_name, column):
     '''Get the required data type for the specified column.
     For most VARCHAR columns, the max length is set to the length
     of the longest value found in the column.
@@ -70,7 +88,7 @@ def get_data_type(engine, column_name, table_name):
     Arguments:
         engine (SQLAlchemy engine)
         table_name (string)
-        column_name (string)
+        column (string)
 
     Returns:
         string
@@ -113,38 +131,38 @@ def get_data_type(engine, column_name, table_name):
                   'year': varchar
                   }
 
-    data_type = data_types.get(column_name, varchar)
+    data_type = data_types.get(column, varchar)
     if 'VARCHAR' in data_type:
 
         # Set max varchar length of field to 255, or max length of value
-        if column_name in ['first_name', 'last_name', 'locality', 'continent', 'store_type']:
+        if column in ['first_name', 'last_name', 'locality', 'continent', 'store_type']:
             max_len = 255
         else:
-            max_len = get_max_length(engine, column_name, table_name)
+            max_len = get_max_length(engine, table_name, column)
         data_type = data_type.format(max_len)
 
         # store_type column is nullable
-        if column_name == 'store_type':
-            data_type += f';\nALTER TABLE {table_name} ALTER COLUMN {column_name} DROP NOT NULL'
+        if column == 'store_type':
+            data_type += f';\nALTER TABLE {table_name} ALTER COLUMN {column} DROP NOT NULL'
 
         return data_type.format(max_len)
 
-    return data_type.format(column_name)
+    return data_type.format(column)
 
 
-def get_max_length(engine, column_name, table_name):
+def get_max_length(engine, table_name, column):
     '''Run SQL to get maximum length of value in column.
 
     Arguments:
         engine (SQLAlchemy engine)
         table_name (string)
-        column_name (string)
+        column (string)
 
     Returns:
         int
     '''
     with engine.connect() as con:
-        sql = F'SELECT MAX(LENGTH(CAST({column_name} AS TEXT))) from {table_name};'
+        sql = F'SELECT MAX(LENGTH(CAST({column} AS TEXT))) from {table_name};'
         cur = con.execute(text(sql))
         return cur.fetchall()[0][0]
 
@@ -226,11 +244,23 @@ if __name__ == '__main__':
     engine = db_connector.engine
     update_tables(engine)
 
-    tables = ['orders_table', 'dim_users', 'dim_store_details', 'dim_products']
+    table_to_column_mapping = dict()
+    tables = db_connector.list_db_tables()
+
     for table_name in tables:
         print('\nUpdating data types for table: ' + table_name)
 
         column_names = get_column_names(engine, table_name)
+        table_to_column_mapping[table_name] = column_names
+
         for column in column_names:
-            data_type = get_data_type(engine, column, table_name)
-            change_data_type(engine, column, table_name, data_type)
+            data_type = get_data_type(engine, table_name, column)
+            change_data_type(engine, table_name, column, data_type)
+
+    print('\nSetting primary keys')
+    orders_table_columns = table_to_column_mapping['orders_table']
+    for table, columns in table_to_column_mapping.items():
+        if table == 'orders_table':
+            continue
+        cols = set(columns) & set(orders_table_columns) - {'index'}
+        add_primary_key(engine, table, *cols)
