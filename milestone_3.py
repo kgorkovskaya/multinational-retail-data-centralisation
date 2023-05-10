@@ -20,6 +20,32 @@ from utils import time_it
 
 
 @time_it
+def add_foreign_key(engine, fk_table, pk_table, *columns):
+    '''Set foreign key in table to the specified column(s).
+
+    Arguments:
+        engine (SQLAlchemy engine)
+        fk_table (string): table being updated with foreign key
+        pk_table (string): table being referenced
+        columns (strings): column names
+
+    Returns:
+        None
+    '''
+
+    columns = ', '.join(columns)
+    constraint_name = 'fk_' + re.sub('^dim_', '', pk_table)
+
+    sql = f'''ALTER TABLE {fk_table}
+        ADD CONSTRAINT {constraint_name} FOREIGN KEY ({columns}) REFERENCES {pk_table} ({columns});'''
+
+    sql = f'ALTER TABLE {table_name} ADD PRIMARY KEY ({columns});'
+    print('Executing SQL: ' + sql)
+    with engine.connect() as con:
+        con.execute(text(sql))
+
+
+@time_it
 def add_primary_key(engine, table_name, *columns):
     '''Set primary key in table to the specified column(s).
 
@@ -34,6 +60,8 @@ def add_primary_key(engine, table_name, *columns):
 
     columns = ', '.join(columns)
     sql = f'ALTER TABLE {table_name} ADD PRIMARY KEY ({columns});'
+    print('Executing SQL: ' + sql)
+    sql = f'ALTER TABLE {table_name} ADD CONSTRAINT uniq UNIQUE ({columns});'
     print('Executing SQL: ' + sql)
     with engine.connect() as con:
         con.execute(text(sql))
@@ -257,10 +285,11 @@ if __name__ == '__main__':
             data_type = get_data_type(engine, table_name, column)
             change_data_type(engine, table_name, column, data_type)
 
-    print('\nSetting primary keys')
+    print('\nSetting primary and foreign keys')
     orders_table_columns = table_to_column_mapping['orders_table']
     for table, columns in table_to_column_mapping.items():
         if table == 'orders_table':
             continue
         cols = set(columns) & set(orders_table_columns) - {'index'}
         add_primary_key(engine, table, *cols)
+        add_foreign_key(engine, fk_table='orders_table', pk_table=table, *cols)
