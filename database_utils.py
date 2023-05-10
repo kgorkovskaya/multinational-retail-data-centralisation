@@ -41,12 +41,14 @@ class DatabaseConnector:
             print(f'{err.__class__.__name__}: {err}')
             return dict()
 
-    def init_db_engine(self, db_type='postgresql', db_api='psycopg2'):
+    def init_db_engine(self, db_type='postgresql', db_api='psycopg2', autocommit=False):
         '''Initialize a SQLAlchemy Engine object.
 
         Arguments: 
             db_type (str): database type
             db_api (str): database API
+            autocommit (bool): if True, transactions will be auto-commited, to 
+                enable durable updates to tables.
 
         Returns: 
             SQLAlchemy database engine or None.
@@ -62,7 +64,11 @@ class DatabaseConnector:
 
             print(f'Connecting to database: {database}')
             cxn_string = f'{db_type}+{db_api}://{user}:{password}@{host}:{port}/{database}'
-            self.engine = create_engine(cxn_string)
+            if autocommit:
+                self.engine = create_engine(
+                    cxn_string, isolation_level='AUTOCOMMIT')
+            else:
+                self.engine = create_engine(cxn_string)
             return self.engine
 
         except Exception as err:
