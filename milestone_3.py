@@ -85,14 +85,18 @@ def get_data_type(engine, column_name, table_name):
                   'country_code': varchar,
                   'date_added': 'DATE',
                   'date_of_birth': 'DATE',
+                  'date_payment_confirmed': 'DATE',
                   'date_uuid': uuid,
+                  'day': varchar,
                   '"EAN"': varchar,
+                  'expiry_date': varchar,
                   'first_name': varchar,
                   'join_date': 'DATE',
                   'last_name': varchar,
                   'latitude': float_type,
                   'locality': varchar,
                   'longitude': float_type,
+                  'month': varchar,
                   'opening_date': 'DATE',
                   'product_code': varchar,
                   'product_price': float_type,
@@ -101,10 +105,12 @@ def get_data_type(engine, column_name, table_name):
                   'still_available': bool_type,
                   'store_code': varchar,
                   'store_type': varchar,
+                  'time_period': varchar,
                   'user_uuid': uuid,
                   'uuid': uuid,
                   'weight': float_type,
-                  'weight_class': varchar
+                  'weight_class': varchar,
+                  'year': varchar
                   }
 
     data_type = data_types.get(column_name, varchar)
