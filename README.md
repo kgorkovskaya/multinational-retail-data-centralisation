@@ -15,7 +15,10 @@ Extract data from various sources; load each dataset into a Pandas Dataframe; st
 - Product details sourced from S3; loaded to __sales_data.dim_products__
 - Date events sourced from JSON; loaded to __sales_data.dim_date_times__
 
-## 3. Create the database schema.
+## 3. Create the database schema
 
-Develop the star-based schema of the database, ensuring that columns have the correct data types.
+Develop the star-based schema of the database, ensuring that columns have the correct data types. Use SQL (executed via SQLAlchemy) to:
+- Update data types for selected columns
+- Derive columns using CASE/WHEN: e.g. create weight class column based on weight
+- Set primary keys and foreign keys
 

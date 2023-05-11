@@ -283,10 +283,10 @@ class DataCleaningGeneric:
         '''
 
         regex_multiplier = r'([0-9]+)\s*x\s*[0-9]'
-        regex_weight_per_item = r'([0-9\.]+)\s*(?:g|kg|ml)\b'
-        regex_unit = r'(?:[0-9\.]+)\s*(g|kg|ml)\b'
+        regex_weight_per_item = r'([0-9\.]+)\s*(?:g|kg|ml|oz)\b'
+        regex_unit = r'(?:[0-9\.]+)\s*(g|kg|ml|oz)\b'
 
-        conversions = {'kg': 1, 'g': 1/1000, 'ml': 1/1000}
+        conversions = {'kg': 1, 'g': 1/1000, 'ml': 1/1000, 'oz': 0.0283495}
 
         for col in columns:
 

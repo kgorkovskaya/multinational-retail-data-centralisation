@@ -39,7 +39,6 @@ def add_foreign_key(engine, fk_table, pk_table, *columns):
     sql = f'''ALTER TABLE {fk_table}
         ADD CONSTRAINT {constraint_name} FOREIGN KEY ({columns}) REFERENCES {pk_table} ({columns});'''
 
-    sql = f'ALTER TABLE {table_name} ADD PRIMARY KEY ({columns});'
     print('Executing SQL: ' + sql)
     with engine.connect() as con:
         con.execute(text(sql))
@@ -59,9 +58,10 @@ def add_primary_key(engine, table_name, *columns):
     '''
 
     columns = ', '.join(columns)
+    constraint_name = 'unique_' + re.sub('^dim_', '', table_name)
     sql = f'ALTER TABLE {table_name} ADD PRIMARY KEY ({columns});'
     print('Executing SQL: ' + sql)
-    sql = f'ALTER TABLE {table_name} ADD CONSTRAINT uniq UNIQUE ({columns});'
+    sql = f'ALTER TABLE {table_name} ADD CONSTRAINT {constraint_name} UNIQUE ({columns});'
     print('Executing SQL: ' + sql)
     with engine.connect() as con:
         con.execute(text(sql))
@@ -292,4 +292,4 @@ if __name__ == '__main__':
             continue
         cols = set(columns) & set(orders_table_columns) - {'index'}
         add_primary_key(engine, table, *cols)
-        add_foreign_key(engine, fk_table='orders_table', pk_table=table, *cols)
+        add_foreign_key(engine, 'orders_table', table, *cols)
