@@ -22,3 +22,7 @@ Develop the star-based schema of the database, ensuring that columns have the co
 - Derive columns using CASE/WHEN: e.g. create weight class column based on weight
 - Set primary keys and foreign keys
 
+## 4. Query the data
+
+Use SQL to query the sales database and create a report of business metrics.
+
