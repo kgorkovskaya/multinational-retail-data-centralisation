@@ -12,8 +12,6 @@ import re
 from datetime import datetime
 from utils import time_it
 from warnings import filterwarnings
-filterwarnings(
-    'ignore', 'The default value of regex will change from True to False in a future version.')
 
 
 def standardize_nulls(func):
@@ -188,7 +186,7 @@ class DataCleaningGeneric:
 
         for col in columns:
             df[col] = df[col].astype(str).str.strip()
-            df[col] = df[col].str.replace(r'@{2,}', '@')
+            df[col] = df[col].str.replace(r'@{2,}', '@', regex=True)
             is_valid_email = df[col].str.contains(r'^[^@]+@[^@]+\.[^@\.]+$')
             df.loc[~is_valid_email, col] = np.nan
         return df
@@ -255,7 +253,8 @@ class DataCleaningGeneric:
         for col in columns:
             df[col].replace(r"[^0-9\(\)Xx\+]", "", regex=True, inplace=True)
             df[col] = df[col].astype(str)
-            invalid_phone_no = df[col].str.replace(r'\D+', '').apply(len) < 7
+            invalid_phone_no = df[col].str.replace(
+                r'\D+', '', regex=True).apply(len) < 7
             df.loc[invalid_phone_no, col] = np.nan
         return df
 
@@ -505,7 +504,7 @@ class DataCleaning(DataCleaningGeneric):
         # fix the typos before calling clean_categories
 
         df['continent'] = df['continent'].astype(str)
-        df['continent'] = df['continent'].str.replace(r'^ee', '')
+        df['continent'] = df['continent'].str.replace(r'^ee', '', regex=True)
         df['continent'] = df['continent'].str.capitalize()
         df = self.clean_categories(df, ['continent'], self.continents)
 
