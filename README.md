@@ -1,6 +1,28 @@
 # AiCore Multinational Retail Data Centralisation Project
 
-Collate and analyse data from various sources, to create a centralised sales database which acts as a single source of truth for sales data. Query the data to extract business metrics.
+Collate and analyse data from various sources, to create a local, centralised PostgreSQL sales database which acts as a single source of truth for sales data. Query the data to extract business metrics.
+
+## IMPORTANT
+
+The following files are expected to exist in your root directory:
+db_creds_sales_data.yaml
+db_creds.yaml
+
+These files contain credentials for containing to the local PostgreSQL database and the AWS RDS database containing orders data. They should be populated as follows.
+
+__db_creds_sales_data.yaml__  
+RDS_HOST: localhost  
+RDS_PASSWORD: <password for your local PostgreSQL database>  
+RDS_USER: postgres  
+RDS_DATABASE: sales_data  
+RDS_PORT: 5432  
+
+__db_creds.yaml__  
+RDS_HOST: data-handling-project-readonly.cq2e8zno855e.eu-west-1.rds.amazonaws.com  
+RDS_PASSWORD: AiCore2022  
+RDS_USER: aicore_admin  
+RDS_DATABASE: postgres  
+RDS_PORT: 5432  
 
 
 ## 1. Extract and clean source data
