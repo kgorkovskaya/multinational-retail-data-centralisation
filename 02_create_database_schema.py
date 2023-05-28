@@ -16,6 +16,7 @@ import pandas as pd
 import re
 from data_ingestion.database_utils import DatabaseConnector
 from sqlalchemy import text
+from sqlalchemy.exc import ProgrammingError
 from utilities.decorators import time_it
 
 
@@ -270,7 +271,11 @@ if __name__ == '__main__':
     db_connector = DatabaseConnector("db_creds_sales_data.yaml")
     db_connector.init_db_engine(autocommit=True)
     engine = db_connector.engine
-    update_tables(engine)
+    try:
+        update_tables(engine)
+    except ProgrammingError:
+        print('Schema has already been updated; no action taken. Exiting.')
+        exit()
 
     table_to_column_mapping = dict()
     tables = db_connector.list_db_tables()

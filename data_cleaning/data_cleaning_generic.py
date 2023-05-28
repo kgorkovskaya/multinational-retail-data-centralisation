@@ -12,56 +12,6 @@ import re
 from datetime import datetime
 
 
-def standardize_nulls(func):
-    '''Decorator to Standardize nulls in Pandas DataFrame; replace "NULL" with NaN.
-    '''
-    def wrapper(*args, **kwargs):
-        for i in range(len(args)):
-            if isinstance(args[i], pd.core.frame.DataFrame):
-                args[i].replace([r'^NULL$', '^N/A$'], np.nan,
-                                regex=True, inplace=True)
-        result = func(*args, **kwargs)
-        return result
-    return wrapper
-
-
-def drop_unwanted_columns(func):
-    '''Decorator to drop unwanted columns in Pandas dataframe'''
-
-    def wrapper(*args, **kwargs):
-        unwanted_columns = ['index', 'Unnamed: 0', 'level_0', '1']
-        for i in range(len(args)):
-            if isinstance(args[i], pd.core.frame.DataFrame):
-                cols = [c for c in args[i].columns if c in unwanted_columns]
-                args[i].drop(cols, axis=1, inplace=True)
-        result = func(*args, **kwargs)
-        return result
-    return wrapper
-
-
-def only_clean_nonempty_df(func):
-    '''Decorator to only process non-empty dataframes;
-    DataExtractor methods return empty dataframes if the
-    data extraction fails; attempting to clean an empty df
-    will result in an error.'''
-
-    def wrapper(*args, **kwargs):
-        non_empty_df = False
-        for i in range(len(args)):
-            if isinstance(args[i], pd.core.frame.DataFrame):
-                non_empty_df = len(args[i]) > 0
-                if non_empty_df:
-                    break
-        if non_empty_df:
-            print('Cleaning data')
-            result = func(*args, **kwargs)
-            return result
-        else:
-            print('Cleaning not attempted; method requires a non-empty dataframe')
-            return pd.DataFrame()
-    return wrapper
-
-
 class DataCleaningGeneric:
     '''This class contains static methods for cleaning
     specific types of columns (e.g. numeric columns; dates;

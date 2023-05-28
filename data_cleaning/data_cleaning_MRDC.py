@@ -6,15 +6,16 @@ Author: Kristina Gorkovskaya
 '''
 
 import pandas as pd
-from data_cleaning.data_cleaning_generic import DataCleaningGeneric, standardize_nulls, drop_unwanted_columns, only_clean_nonempty_df
+from data_cleaning.data_cleaning_generic import DataCleaningGeneric
+from data_cleaning.decorators import drop_unwanted_columns, only_clean_nonempty_df, standardize_nulls
 from utilities.decorators import time_it
 
 
 class DataCleaning(DataCleaningGeneric):
     '''This class cleans the data in a Pandas dataframe.
-    It is designed to work with specific datasets, and includes
-    methods for cleaning user data, card data, date event data, 
-    product data, and store data. 
+    It is designed to work with the specific datasets in the Multinational
+    Retail Data Centralisation project, and includes methods for cleaning user data, 
+    card data, date event data, product data, and store data. 
 
     Attributes:
         continents (list): valid continents
@@ -25,7 +26,6 @@ class DataCleaning(DataCleaningGeneric):
     def __init__(self):
         '''See help(DataCleaning) for accurate signature.'''
 
-        super().__init__()
         self.continents = ['Europe', 'America']
         self.country_codes = ['DE', 'GB', 'US']
         self.time_periods = ['Evening', 'Morning', 'Midday', 'Late_Hours']
@@ -37,7 +37,7 @@ class DataCleaning(DataCleaningGeneric):
     def clean_card_data(self, df):
         '''Clean credit card data: standardize card numbers and dates.
 
-        Valid card numbers are expected to have a card_number 
+        Valid records are expected to have a card_number 
         comprising at least 8 numeric digits; a valid expiry date;
         and a valid date_payment_confirmed not in the future. 
         Identify and drop invalid records.
@@ -90,7 +90,7 @@ class DataCleaning(DataCleaningGeneric):
 
         # Use pd.to_datetime to identify and drop records with invalid timestamps;
         # but don't convert the timestamp column to a datetime object, as this
-        # will set the YYYY-MM-DD componen to 1901-01-01
+        # will set the YYYY-MM-DD component to 1901-01-01
 
         is_valid_timestamp = pd.to_datetime(
             df.timestamp, format='%H:%M:%S', errors='coerce').notnull()
@@ -202,7 +202,7 @@ class DataCleaning(DataCleaningGeneric):
 
         # Some continents have been incorrectly entered
         # with an "ee" prefix ("eeAmerica", "eeEurope");
-        # fix the typos before calling clean_categories
+        # fix the typos (remove leading "ee") before calling clean_categories
 
         df['continent'] = df['continent'].astype(str)
         df['continent'] = df['continent'].str.replace(r'^ee', '', regex=True)

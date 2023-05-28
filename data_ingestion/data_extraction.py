@@ -1,9 +1,8 @@
 '''
 AiCore Multinational Retail Data Centralisation Project
-Extract data from various sources
+Extract data from various sources: API, JSON, PDF, RDS, S3
 
 Author: Kristina Gorkovskaya
-Date: 2023-05-07
 '''
 
 import boto3
@@ -19,11 +18,7 @@ from utilities.decorators import print_newline, time_it
 
 class DataExtractor:
     '''This class extracts data from a variety of input sources
-    into a Pandas dataframe. Input sources:
-        - Database tables
-        - JSON
-        - PDF files
-        - API
+    into a Pandas dataframe. Input sources: API, JSON, PDF, RDS, S3
 
     Attributes:
         None
