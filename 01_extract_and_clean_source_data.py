@@ -13,7 +13,7 @@ Date: 2023-05-08
 
 from database_utils import DatabaseConnector
 from data_extraction import DataExtractor
-from data_cleaning import DataCleaning
+from data_cleaning.data_cleaning_MRDC import DataCleaning
 
 
 if __name__ == '__main__':
