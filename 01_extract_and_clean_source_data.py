@@ -11,8 +11,8 @@ Author: Kristina Gorkovskaya
 Date: 2023-05-08
 '''
 
-from database_utils import DatabaseConnector
-from data_extraction import DataExtractor
+from data_ingestion.database_utils import DatabaseConnector
+from data_ingestion.data_extraction import DataExtractor
 from data_cleaning.data_cleaning_MRDC import DataCleaning
 
 

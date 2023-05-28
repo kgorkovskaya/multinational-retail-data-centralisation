@@ -1,6 +1,6 @@
 '''
 AiCore Multinational Retail Data Centralisation Project
-Data extraction
+Data extraction from various sources
 
 Author: Kristina Gorkovskaya
 Date: 2023-05-07
@@ -12,9 +12,9 @@ import pandas as pd
 import re
 import requests
 import tabula
-from database_utils import DatabaseConnector
+from data_ingestion.database_utils import DatabaseConnector
 from sqlalchemy import text
-from utils import print_newline, time_it
+from utilities.decorators import print_newline, time_it
 
 
 class DataExtractor:

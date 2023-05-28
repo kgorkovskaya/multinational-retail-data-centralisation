@@ -1,6 +1,6 @@
 '''
 AiCore Multinational Retail Data Centralisation Project
-Database utilities
+Database utilities: connect to database; list tables; upload data to DB.
 
 Author: Kristina Gorkovskaya
 Date: 2023-05-06

@@ -14,9 +14,9 @@ Date: 2023-05-08
 
 import pandas as pd
 import re
-from database_utils import DatabaseConnector
+from data_ingestion.database_utils import DatabaseConnector
 from sqlalchemy import text
-from utils import time_it
+from utilities.decorators import time_it
 
 
 @time_it

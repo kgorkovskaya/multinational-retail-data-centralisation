@@ -1,9 +1,8 @@
 '''
 AiCore Multinational Retail Data Centralisation Project
-Utility functions
+Decorators for printing line breaks, timing execution
 
 Author: Kristina Gorkovskaya
-Date: 2023-05-07
 '''
 
 import pandas as pd

@@ -7,8 +7,8 @@ Author: Kristina Gorkovskaya
 '''
 
 import pandas as pd
-from utils import time_it
-from data_cleaning_generic import DataCleaningGeneric, standardize_nulls, drop_unwanted_columns, only_clean_nonempty_df
+from data_cleaning.data_cleaning_generic import DataCleaningGeneric, standardize_nulls, drop_unwanted_columns, only_clean_nonempty_df
+from utilities.decorators import time_it
 
 
 class DataCleaning(DataCleaningGeneric):
