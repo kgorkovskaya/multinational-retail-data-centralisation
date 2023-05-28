@@ -1,7 +1,6 @@
 '''
 AiCore Multinational Retail Data Centralisation Project
-Data cleaning - specific to the Multinational Retail Data
-Centralisation project.
+Data cleaning - specific to the Multinational Retail Data Centralisation dataset.
 
 Author: Kristina Gorkovskaya
 '''
