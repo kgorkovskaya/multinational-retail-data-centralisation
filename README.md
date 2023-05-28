@@ -4,8 +4,8 @@ Collate and analyse data from various sources, to create a local, centralised Po
 
 ## IMPORTANT
 
-The following files are expected to exist in your root directory:
-db_creds_sales_data.yaml
+The following YAML files are expected to exist in your root directory:  
+db_creds_sales_data.yaml  
 db_creds.yaml
 
 These files contain credentials for containing to the local PostgreSQL database and the AWS RDS database containing orders data. They should be populated as follows.
