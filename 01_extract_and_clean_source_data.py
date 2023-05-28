@@ -49,7 +49,6 @@ if __name__ == '__main__':
     # Clean and load products
     s3_address = 's3://data-handling-public/products.csv'
     df = DataExtractor.extract_from_s3(s3_address)
-    df.to_excel('products.xlsx', freeze_panes=(1, 0))
     df = DataCleaning().clean_products_data(df)
     db_connector_local.upload_to_db(df, 'dim_products')
 
