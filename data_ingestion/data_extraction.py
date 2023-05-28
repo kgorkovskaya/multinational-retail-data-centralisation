@@ -1,6 +1,6 @@
 '''
 AiCore Multinational Retail Data Centralisation Project
-Data extraction from various sources
+Extract data from various sources
 
 Author: Kristina Gorkovskaya
 Date: 2023-05-07
