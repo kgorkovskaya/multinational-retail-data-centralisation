@@ -27,7 +27,7 @@ RDS_PORT: 5432
 
 ## 1. Extract and clean source data
 
-Extract data from various sources (API, JSON, PDF, RDS, S3); load each dataset into a Pandas Dataframe; standardize; identify and remove invalid records; load each dataset to a table on a local PostgreSQL database.
+Extract data from various sources (API, JSON, PDF, RDS, S3); load each dataset into a Pandas Dataframe; clean the data; identify and remove invalid records; load each dataset to a table on the local PostgreSQL database.
 - User details and order details sourced from PostgreSQL database hosted on AWS RDS; loaded to __sales_data.dim_users__ and __sales_data.orders_table__
 - Credit card details sourced from PDF; loaded to __sales_data.dim_card_details__
 - Store details sourced from API; loaded to __sales_data.dim_store_details__
@@ -36,14 +36,14 @@ Extract data from various sources (API, JSON, PDF, RDS, S3); load each dataset i
 
 ## 2. Create the database schema
 
-Develop the star-based schema of the database, ensuring that columns have the correct data types. Use SQL (executed via SQLAlchemy) to:
+Develop the star-based schema of the PostgreSQL database, ensuring that columns have the correct data types. Use SQL (executed via SQLAlchemy) to:
 - Update data types for selected columns
 - Derive columns using CASE/WHEN: e.g. create weight class column based on weight
 - Set primary keys and foreign keys
 
 ## 3. Query the data
 
-Use SQL to query the sales database and create a report of business metrics, answering questions such as:
+Use SQL to query the PostgreSQL database and create a report of business metrics, answering questions such as:
 - Which locations have the most stores?
 - Which months produce the highest sales?
 - What percentage of sales come from each store type?
