@@ -8,11 +8,11 @@ The following YAML files are expected to exist in your root directory:
 db_creds_sales_data.yaml  
 db_creds.yaml
 
-These files contain credentials for containing to the local PostgreSQL database and the AWS RDS database containing orders data. They should be populated as follows.
+These files contain credentials for containing to the local PostgreSQL database, and the AWS RDS database containing orders data. The YAML files should be populated as follows:
 
 __db_creds_sales_data.yaml__  
 RDS_HOST: localhost  
-RDS_PASSWORD: <password for your local PostgreSQL database>  
+RDS_PASSWORD: _password for your local PostgreSQL database_  
 RDS_USER: postgres  
 RDS_DATABASE: sales_data  
 RDS_PORT: 5432  
