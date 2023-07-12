@@ -8,22 +8,12 @@ The following YAML files are expected to exist in your root directory:
 db_creds_sales_data.yaml  
 db_creds.yaml
 
-These files contain credentials for containing to the local PostgreSQL database, and the AWS RDS database containing orders data. The YAML files should be populated as follows:
-
-__db_creds_sales_data.yaml__  
-RDS_HOST: localhost  
-RDS_PASSWORD: _password for your local PostgreSQL database_  
-RDS_USER: postgres  
-RDS_DATABASE: sales_data  
-RDS_PORT: 5432  
-
-__db_creds.yaml__  
-RDS_HOST: data-handling-project-readonly.cq2e8zno855e.eu-west-1.rds.amazonaws.com  
-RDS_PASSWORD: AiCore2022  
-RDS_USER: aicore_admin  
-RDS_DATABASE: postgres  
-RDS_PORT: 5432  
-
+These files contain credentials for connecting to the local PostgreSQL database, and the AWS RDS database containing orders data, respectively. The YAML files should contain the following keys:
+RDS_HOST
+RDS_PASSWORD
+RDS_USER
+RDS_DATABASE
+RDS_PORT
 
 ## 1. Extract and clean source data
 
